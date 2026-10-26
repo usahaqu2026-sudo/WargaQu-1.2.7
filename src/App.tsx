@@ -1,0 +1,1565 @@
+import React, { useState, useEffect } from 'react';
+import { AndroidFrame } from './components/AndroidFrame';
+import { HeaderBar } from './components/HeaderBar';
+import { NavigationDrawer } from './components/NavigationDrawer';
+import { BottomNavBar } from './components/BottomNavBar';
+import { TableGrid } from './components/kasir/TableGrid';
+import { OrderBottomSheet } from './components/kasir/OrderBottomSheet';
+import { TableActionModal } from './components/kasir/TableActionModal';
+import { CheckoutModal } from './components/kasir/CheckoutModal';
+import { ReceiptModal } from './components/kasir/ReceiptModal';
+import { BahanView } from './components/bahan/BahanView';
+import { OmsetDashboard } from './components/omset/OmsetDashboard';
+import { LaporanView } from './components/laporan/LaporanView';
+import { SettingView } from './components/setting/SettingView';
+import { BluetoothModal } from './components/BluetoothModal';
+
+// AppQu Ecosystem Components
+import { AppQuHeader } from './components/appqu/AppQuHeader';
+import { AppQuBottomNav } from './components/appqu/AppQuBottomNav';
+import { PaguyubanView } from './components/appqu/PaguyubanView';
+import { WargaView } from './components/appqu/WargaView';
+import { UsahaQuView } from './components/appqu/UsahaQuView';
+import { AreaQuView } from './components/appqu/AreaQuView';
+import { SiagaQuView } from './components/appqu/SiagaQuView';
+import { ArsitekturView } from './components/appqu/ArsitekturView';
+import { HierarchyModal } from './components/appqu/HierarchyModal';
+import { RoleSwitcherModal } from './components/appqu/RoleSwitcherModal';
+import { ChatQuView } from './components/appqu/ChatQuView';
+import { BengkelQuView } from './components/bengkel/BengkelQuView';
+import { KlinikQuView } from './components/klinik/KlinikQuView';
+import { RitelQuView } from './components/ritel/RitelQuView';
+import { KulinerQuView } from './components/kuliner/KulinerQuView';
+import { TransportasiQuView } from './components/transportasi/TransportasiQuView';
+import { PelayananQuView } from './components/pelayanan/PelayananQuView';
+import { ProyekQuView } from './components/proyek/ProyekQuView';
+import { LapakQuView } from './components/lapak/LapakQuView';
+import { MuamalahQuView } from './components/muamalah/MuamalahQuView';
+import { SettingsSidebarDrawer, SettingSubTabKey } from './components/appqu/SettingsSidebarDrawer';
+import { ModuleSwitcherModal, AppQuModuleKey } from './components/appqu/ModuleSwitcherModal';
+
+import {
+  TableItem,
+  MenuItem,
+  Order,
+  OrderItem,
+  OrderType,
+  Ingredient,
+  RestaurantProfile,
+  PrinterConfig,
+  UserProfile,
+  ResidentData,
+  FeedPost,
+  AgendaEvent,
+  KasTransaction,
+  SuratPengantar,
+  LocalBusiness,
+  PatrolCheckpoint,
+  PatrolLog,
+  MusibahItem,
+  PiketTask,
+  AreaPoint,
+  TransportasiCourier,
+} from './types';
+
+import { StorageService } from './services/storage';
+import { AppQuStorageService, PRESET_USERS, PendingVerificationItem } from './services/storageAppQu';
+import { ThemeService, ThemeMode } from './services/themeService';
+import { OrganizationStorageService, OrganizationData } from './services/storageOrganizations';
+import { PrinterService } from './services/printer';
+import { UpdateService, UpdateInfo } from './services/updateService';
+import { UpdateModal } from './components/UpdateModal';
+import { Sparkles, Zap, Lock, ShieldCheck } from 'lucide-react';
+import {
+  AuthSecurityService,
+  AuthSession,
+  BroadcastAnnouncement,
+  ADMIN_MASTER_EMAIL,
+} from './services/authSecurityService';
+import { AuthModal } from './components/auth/AuthModal';
+import { AdminCommandCenter } from './components/admin/AdminCommandCenter';
+import { BroadcastPopupModal } from './components/auth/BroadcastPopupModal';
+
+export default function App() {
+  // ====================================================
+  // MASTER APPLICATION MODE: 'appqu' | 'baksoqu' | 'bengkelqu' | 'klinikqu' | 'ritelqu' | 'kulinerqu' | 'transportasiqu' | 'pelayananqu' | 'proyekqu' | 'lapakqu' | 'muamalahqu'
+  // ====================================================
+  const [appMode, setAppMode] = useState<
+    'appqu' | 'baksoqu' | 'bengkelqu' | 'klinikqu' | 'ritelqu' | 'kulinerqu' | 'transportasiqu' | 'pelayananqu' | 'proyekqu' | 'lapakqu' | 'muamalahqu'
+  >('appqu');
+
+  // AppQu Active Module (With AreaQu, ChatQu, MuamalahQu, and Setting)
+  const [activeAppQuModule, setActiveAppQuModule] = useState<
+    'paguyuban' | 'warga' | 'usaha' | 'area' | 'siaga' | 'arsitektur' | 'chat' | 'setting' | 'muamalah'
+  >('paguyuban');
+
+  // Sub-Tab state per Module for compact single-row bottom navigation
+  const [paguyubanSubTab, setPaguyubanSubTab] = useState<
+    'beranda' | 'anggota' | 'kas' | 'agenda' | 'setting_org'
+  >('beranda');
+  const [areaSubTab, setAreaSubTab] = useState<'map' | 'list' | 'rental' | 'netral'>('map');
+  const [muamalahSubTab, setMuamalahSubTab] = useState<'pasar' | 'konsinyasi' | 'tambah'>('pasar');
+  const [usahaSubTab, setUsahaSubTab] = useState<'katalog' | 'mode' | 'tarif'>('katalog');
+  const [chatSubTab, setChatSubTab] = useState<'transaksi' | 'komunitas' | 'sos'>('transaksi');
+  const [siagaSubTab, setSiagaSubTab] = useState<'darurat' | 'patroli' | 'solidaritas'>('darurat');
+
+  const getCurrentModuleSubTab = () => {
+    switch (activeAppQuModule) {
+      case 'paguyuban':
+        return paguyubanSubTab;
+      case 'area':
+        return areaSubTab;
+      case 'muamalah':
+        return muamalahSubTab;
+      case 'usaha':
+        return usahaSubTab;
+      case 'chat':
+        return chatSubTab;
+      case 'siaga':
+        return siagaSubTab;
+      default:
+        return 'main';
+    }
+  };
+
+  const handleSelectSubTab = (subTab: string) => {
+    switch (activeAppQuModule) {
+      case 'paguyuban':
+        setPaguyubanSubTab(subTab as any);
+        break;
+      case 'area':
+        setAreaSubTab(subTab as any);
+        if (subTab === 'rental') setIsAreaRentalModalOpen(true);
+        if (subTab === 'netral') setIsAreaNeutralityModalOpen(true);
+        break;
+      case 'muamalah':
+        setMuamalahSubTab(subTab as any);
+        break;
+      case 'usaha':
+        setUsahaSubTab(subTab as any);
+        break;
+      case 'chat':
+        setChatSubTab(subTab as any);
+        break;
+      case 'siaga':
+        setSiagaSubTab(subTab as any);
+        break;
+    }
+  };
+
+  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState<boolean>(false);
+  const [settingSubTab, setSettingSubTab] = useState<SettingSubTabKey>('profil');
+
+  const [selectedChatThreadId, setSelectedChatThreadId] = useState<string | null>(null);
+
+  // AppQu Current User (RBAC Role Switcher)
+  const [currentUser, setCurrentUser] = useState<UserProfile>(
+    AppQuStorageService.getCurrentUser()
+  );
+
+  // AppQu Ecosystem Core Data
+  const [residents, setResidents] = useState<ResidentData[]>([]);
+  const [feeds, setFeeds] = useState<FeedPost[]>([]);
+  const [agenda, setAgenda] = useState<AgendaEvent[]>([]);
+  const [kas, setKas] = useState<KasTransaction[]>([]);
+  const [letters, setLetters] = useState<SuratPengantar[]>([]);
+  const [businesses, setBusinesses] = useState<LocalBusiness[]>([]);
+  const [checkpoints, setCheckpoints] = useState<PatrolCheckpoint[]>([]);
+  const [patrolLogs, setPatrolLogs] = useState<PatrolLog[]>([]);
+  const [musibahList, setMusibahList] = useState<MusibahItem[]>([]);
+  const [piketTasks, setPiketTasks] = useState<PiketTask[]>([]);
+
+  // AreaQu & Chain of Trust Data States
+  const [areaPoints, setAreaPoints] = useState<AreaPoint[]>([]);
+  const [couriers, setCouriers] = useState<TransportasiCourier[]>([]);
+  const [pendingVerifications, setPendingVerifications] = useState<PendingVerificationItem[]>([]);
+  const [isHierarchyModalOpen, setIsHierarchyModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isModuleSwitcherOpen, setIsModuleSwitcherOpen] = useState(false);
+
+  // AreaQu Header Filter & Modal States
+  const [areaRadiusMeters, setAreaRadiusMeters] = useState<number>(3000);
+  const [areaCategory, setAreaCategory] = useState<string>('all');
+  const [isAreaRentalModalOpen, setIsAreaRentalModalOpen] = useState<boolean>(false);
+  const [isAreaNeutralityModalOpen, setIsAreaNeutralityModalOpen] = useState<boolean>(false);
+
+  // Global Theme Mode (Light / Dark) for All WargaQu Modules
+  const [theme, setTheme] = useState<ThemeMode>(() => ThemeService.getTheme());
+  const handleToggleTheme = () => {
+    const next = ThemeService.toggleTheme();
+    setTheme(next);
+    showNotification(
+      `Mode tampilan diubah ke: ${next === 'light' ? '☀️ Terang (Light Mode)' : '🌙 Gelap (Dark Mode)'}`
+    );
+  };
+
+  // Active Multi-Organization for Header & PaguyubanQu
+  const [activeOrg, setActiveOrg] = useState<OrganizationData>(() =>
+    OrganizationStorageService.getActiveOrganization()
+  );
+  const [isPaguyubanSwitchOrgOpen, setIsPaguyubanSwitchOrgOpen] = useState<boolean>(false);
+  const [isPaguyubanAddOrgOpen, setIsPaguyubanAddOrgOpen] = useState<boolean>(false);
+
+  // ====================================================
+  // BAKSOQU 1.0 POS DATA STATES
+  // ====================================================
+  const [activeBaksoTab, setActiveBaksoTab] = useState<string>('kasir');
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isBluetoothModalOpen, setIsBluetoothModalOpen] = useState<boolean>(false);
+
+  const [tables, setTables] = useState<TableItem[]>([]);
+  const [menuList, setMenuList] = useState<MenuItem[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [history, setHistory] = useState<Order[]>([]);
+  const [activeOrders, setActiveOrders] = useState<Record<string, Order>>({});
+  const [profile, setProfile] = useState<RestaurantProfile>(StorageService.getProfile());
+  const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(
+    StorageService.getPrinterConfig()
+  );
+
+  // BaksoQu POS Interactive Flow States
+  const [selectedTableForAction, setSelectedTableForAction] = useState<TableItem | null>(null);
+  const [orderSheetState, setOrderSheetState] = useState<{
+    isOpen: boolean;
+    orderType: OrderType;
+    tableId?: string;
+    tableName?: string;
+    existingOrder?: Order | null;
+  }>({
+    isOpen: false,
+    orderType: 'meja',
+  });
+
+  const [checkoutOrder, setCheckoutOrder] = useState<Order | null>(null);
+  const [receiptModalState, setReceiptModalState] = useState<{
+    isOpen: boolean;
+    order: Order | null;
+    isKitchenSlip?: boolean;
+  }>({
+    isOpen: false,
+    order: null,
+    isKitchenSlip: false,
+  });
+
+  // Global Notification Toast
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Auto-Update States
+  const [availableUpdate, setAvailableUpdate] = useState<UpdateInfo | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+
+  // Auth & Admin Security States
+  const [authSession, setAuthSession] = useState<AuthSession | null>(() =>
+    AuthSecurityService.getStoredSession()
+  );
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isAdminCenterOpen, setIsAdminCenterOpen] = useState<boolean>(false);
+  const [activeBroadcast, setActiveBroadcast] = useState<BroadcastAnnouncement | null>(null);
+  const [isAddResidentFromHeader, setIsAddResidentFromHeader] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Initialize global theme mode on document
+    ThemeService.initTheme();
+
+    // Sync theme if changed anywhere
+    const handleThemeChange = (e: any) => {
+      if (e.detail && (e.detail === 'light' || e.detail === 'dark')) {
+        setTheme(e.detail);
+      }
+    };
+    window.addEventListener('wargaqu_theme_changed', handleThemeChange);
+
+    // Validate session integrity and device lock hash
+    AuthSecurityService.validateCurrentSession().then(({ isValid, isDeviceMismatch, session }) => {
+      if (isValid && session) {
+        setAuthSession(session);
+      } else if (isDeviceMismatch) {
+        setAuthSession(null);
+        showNotification('⚠️ ID Perangkat Berbeda! Silakan lakukan pemulihan/transfer sesi.');
+      } else {
+        setAuthSession(null);
+      }
+    });
+
+    // Check for unseen mass broadcasts
+    const bcTimer = setTimeout(() => {
+      const unseen = AuthSecurityService.getUnseenBroadcast();
+      if (unseen) {
+        setActiveBroadcast(unseen);
+      }
+    }, 2500);
+    return () => {
+      window.removeEventListener('wargaqu_theme_changed', handleThemeChange);
+      clearTimeout(bcTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check for updates in background (auto-check)
+    const runUpdateCheck = async () => {
+      if (!UpdateService.isAutoCheckEnabled()) return;
+      try {
+        const info = await UpdateService.checkForUpdates();
+        if (info.hasUpdate) {
+          setAvailableUpdate(info);
+          setIsUpdateModalOpen(true);
+          showNotification(`🚀 Pembaruan Otomatis: WargaQu v${info.latestVersion} tersedia!`);
+        }
+      } catch (e) {
+        // Silent catch for background check
+      }
+    };
+    const timer = setTimeout(runUpdateCheck, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Initial Load for both AppQu and BaksoQu
+  useEffect(() => {
+    // Load AppQu data
+    setResidents(AppQuStorageService.getResidents());
+    setFeeds(AppQuStorageService.getFeeds());
+    setAgenda(AppQuStorageService.getAgenda());
+    setKas(AppQuStorageService.getKas());
+    setLetters(AppQuStorageService.getLetters());
+    setBusinesses(AppQuStorageService.getBusinesses());
+    setCheckpoints(AppQuStorageService.getCheckpoints());
+    setPatrolLogs(AppQuStorageService.getPatrolLogs());
+    setMusibahList(AppQuStorageService.getMusibah());
+    setPiketTasks(AppQuStorageService.getPiket());
+
+    // Load AreaQu & Chain of Trust Data
+    setAreaPoints(AppQuStorageService.getAreaPoints());
+    setCouriers(AppQuStorageService.getCouriers());
+    setPendingVerifications(AppQuStorageService.getPendingVerifications());
+
+    // Load BaksoQu POS data
+    setTables(StorageService.getTables());
+    setMenuList(StorageService.getMenu());
+    setIngredients(StorageService.getIngredients());
+    setHistory(StorageService.getHistory());
+    setActiveOrders(StorageService.getActiveOrders());
+    setProfile(StorageService.getProfile());
+    setPrinterConfig(StorageService.getPrinterConfig());
+  }, []);
+
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Chain of Trust Handlers: Approve & Reject Resident
+  const handleApproveResident = (id: string) => {
+    const updated = pendingVerifications.map((p) =>
+      p.id === id ? { ...p, status: 'approved' as const } : p
+    );
+    setPendingVerifications(updated);
+    AppQuStorageService.savePendingVerifications(updated);
+    showNotification('Warga baru telah disetujui penuh menjadi Permanent Verified!');
+  };
+
+  const handleRejectResident = (id: string) => {
+    const updated = pendingVerifications.map((p) =>
+      p.id === id ? { ...p, status: 'rejected' as const } : p
+    );
+    setPendingVerifications(updated);
+    AppQuStorageService.savePendingVerifications(updated);
+    showNotification('Pengajuan warga ditolak.');
+  };
+
+  // Chain of Trust: Request Neighbor Witness
+  const handleRequestWitness = (neighborName: string) => {
+    const newCount = Math.min(2, (currentUser.witnessCount || 0) + 1);
+    const updatedUser: UserProfile = {
+      ...currentUser,
+      witnessCount: newCount,
+      verificationStatus: newCount >= 2 ? 'temporary_active' : 'unverified',
+      temporaryDaysLeft: newCount >= 2 ? 30 : 0,
+      witnesses: [
+        ...(currentUser.witnesses || []),
+        {
+          id: `w-${Date.now()}`,
+          name: neighborName,
+          blockNumber: 'RT 04',
+          phone: '0812-xxxx-xxxx',
+          confirmedAt: new Date().toISOString().split('T')[0],
+        },
+      ],
+    };
+    setCurrentUser(updatedUser);
+    AppQuStorageService.saveCurrentUser(updatedUser);
+    showNotification(
+      newCount >= 2
+        ? 'Selamat! 2 Saksi Tetangga lengkap. Status Anda kini Temporary Active (30 Hari) & Panic Button Terbuka!'
+        : `Saksi dari ${neighborName} berhasil dikonfirmasi (1/2 Saksi).`
+    );
+  };
+
+  // Change Active RBAC User
+  const handleChangeUser = (newUser: UserProfile) => {
+    setCurrentUser(newUser);
+    AppQuStorageService.saveCurrentUser(newUser);
+    showNotification(`Peran aktif beralih ke: ${newUser.name} (${newUser.roleTitle})`);
+  };
+
+  // Switch to BaksoQu POS Workstation
+  const handleSwitchToBaksoQu = () => {
+    setAppMode('baksoqu');
+    setActiveBaksoTab('kasir');
+    showNotification('Beralih ke UsahaQu: Bakso Qu 1.0 (POS Restoran)');
+  };
+
+  // Switch to BengkelQu Smart Workshop System
+  const handleSwitchToBengkelQu = () => {
+    setAppMode('bengkelqu');
+    showNotification('Beralih ke BengkelQu: Asisten Pintar & Bengkel Warga RT 04 (100% Gratis)');
+  };
+
+  // Switch to KlinikQu Medical POS & Clinic System
+  const handleSwitchToKlinikQu = () => {
+    setAppMode('klinikqu');
+    showNotification('Beralih ke KlinikQu: Kasir & Layanan Medis Faskes Warga RT 04');
+  };
+
+  // Switch to RitelQu Grocery & Retail POS System
+  const handleSwitchToRitelQu = () => {
+    setAppMode('ritelqu');
+    showNotification('Beralih ke RitelQu: Kasir & Toko Kelontong Warga RT 04');
+  };
+
+  // Switch to KulinerQu Offline POS Workstation
+  const handleSwitchToKulinerQu = () => {
+    setAppMode('kulinerqu');
+    showNotification('Beralih ke KulinerQu: POS Kuliner Offline (Kios, Mangkal & Keliling)');
+  };
+
+  // Switch to TransportasiQu 6 Sub-Kategori Angkutan & Logistik
+  const handleSwitchToTransportasiQu = () => {
+    setAppMode('transportasiqu');
+    showNotification('Beralih ke TransportasiQu: 6 Sub-Kategori Jasa Angkutan & Logistik');
+  };
+
+  // Switch to PelayananQu 6 Sub-Kategori Layanan & Jasa Akar Rumput
+  const handleSwitchToPelayananQu = () => {
+    setAppMode('pelayananqu');
+    showNotification('Beralih ke PelayananQu: 6 Sub-Kategori Jasa & Layanan Warga');
+  };
+
+  // Switch to ProyekQu (UsahaQu - Proyek)
+  const handleSwitchToProyekQu = () => {
+    setAppMode('proyekqu');
+    showNotification('Beralih ke UsahaQu - Proyek: Estimator & RAB Borongan');
+  };
+
+  // Switch to LapakQu (Sewa Lapak & Properti Warga)
+  const handleSwitchToLapakQu = () => {
+    setAppMode('lapakqu');
+    showNotification('Beralih ke LapakQu: Sewa Lapak & Properti Warga (5 Sub-Kategori)');
+  };
+
+  // Switch to MuamalahQu (Pasar & Titip Jual Warga - Light/Dark Mode)
+  const handleSwitchToMuamalahQu = () => {
+    setAppMode('muamalahqu');
+    showNotification('Beralih ke MuamalahQu: Pasar Warga & Titip Jual (Light/Dark Mode)');
+  };
+
+  // Return to AppQu Ecosystem
+  const handleReturnToAppQu = () => {
+    setAppMode('appqu');
+    setActiveAppQuModule('usaha');
+    showNotification('Kembali ke Ekosistem Utama AppQu');
+  };
+
+  // Switch Module handler from bottom navbar grid switcher
+  const handleSelectModuleFromSwitcher = (mod: AppQuModuleKey) => {
+    setAppMode('appqu');
+    if (mod === 'chat') setSelectedChatThreadId(null);
+    setActiveAppQuModule(mod);
+    setIsModuleSwitcherOpen(false);
+    const modLabels: Record<string, string> = {
+      paguyuban: 'PaguyubanQu (Sosial & Kas)',
+      area: 'AreaQu (Peta & Zonasi GPS)',
+      muamalah: 'MuamalahQu (Pasar Warga & Titip Jual)',
+      usaha: 'UsahaQu (Lapak UMKM & POS)',
+      chat: 'ChatQu (Percakapan & Notifikasi)',
+      siaga: 'SiagaQu (Tombol Darurat SOS & Ronda)',
+      warga: 'WargaQu (Buku Induk Warga)',
+      arsitektur: 'Arsitektur & Skema DB',
+      setting: 'Pengaturan & Auto-Update',
+    };
+    showNotification(`Beralih ke: ${modLabels[mod] || mod}`);
+  };
+
+  // ----------------------------------------------------
+  // BAKSOQU TABLE MANAGEMENT
+  // ----------------------------------------------------
+  const handleAddTable = () => {
+    const nextNumber = tables.length > 0 ? Math.max(...tables.map((t) => t.number)) + 1 : 1;
+    const newTable: TableItem = {
+      id: `tbl-${Date.now()}`,
+      name: `Meja ${nextNumber}`,
+      number: nextNumber,
+      status: 'kosong',
+      positionIndex: tables.length,
+    };
+    const updated = [...tables, newTable];
+    setTables(updated);
+    StorageService.saveTables(updated);
+    showNotification(`Meja ${nextNumber} berhasil ditambahkan ke denah.`);
+  };
+
+  const handleReorderTables = (newTables: TableItem[]) => {
+    setTables(newTables);
+    StorageService.saveTables(newTables);
+  };
+
+  const handleDeleteTable = (tableId: string) => {
+    const updated = tables.filter((t) => t.id !== tableId);
+    setTables(updated);
+    StorageService.saveTables(updated);
+    showNotification('Meja dihapus dari denah.');
+  };
+
+  const handleSelectTable = (table: TableItem) => {
+    if (table.status === 'kosong') {
+      setOrderSheetState({
+        isOpen: true,
+        orderType: 'meja',
+        tableId: table.id,
+        tableName: table.name,
+        existingOrder: null,
+      });
+    } else {
+      setSelectedTableForAction(table);
+    }
+  };
+
+  const handleOpenBungkus = () => {
+    setOrderSheetState({
+      isOpen: true,
+      orderType: 'bungkus',
+      existingOrder: null,
+    });
+  };
+
+  // ----------------------------------------------------
+  // BAKSOQU ORDER & PAYMENT FLOW
+  // ----------------------------------------------------
+  const handleSaveAndPrintOrder = async (
+    items: OrderItem[],
+    type: OrderType,
+    tableId?: string,
+    tableName?: string,
+    customerName?: string,
+    printOption?: 'bluetooth' | 'pdf' | 'none'
+  ) => {
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const date = new Date();
+    const dateKey = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+
+    let orderToSave: Order;
+
+    if (orderSheetState.existingOrder) {
+      orderToSave = {
+        ...orderSheetState.existingOrder,
+        items,
+        subtotal,
+        total: subtotal,
+        customerName: customerName || orderSheetState.existingOrder.customerName,
+      };
+    } else {
+      const newReceiptNumber = `BQ-${dateKey}-${String(Math.floor(100 + Math.random() * 900))}`;
+      orderToSave = {
+        id: `ord-${Date.now()}`,
+        receiptNumber: newReceiptNumber,
+        type,
+        tableId,
+        tableName,
+        customerName: customerName || (type === 'meja' ? tableName || 'Meja' : 'Bungkus'),
+        items,
+        subtotal,
+        discount: 0,
+        tax: 0,
+        total: subtotal,
+        status: 'saved',
+        createdAt: date.toISOString(),
+      };
+    }
+
+    if (type === 'bungkus') {
+      setOrderSheetState({ isOpen: false, orderType: 'bungkus' });
+      setCheckoutOrder(orderToSave);
+      showNotification('Pesanan bungkus tersimpan. Lanjutkan pembayaran.');
+      return;
+    }
+
+    // Dine-in table order
+    const updatedActiveOrders = { ...activeOrders, [orderToSave.id]: orderToSave };
+    setActiveOrders(updatedActiveOrders);
+    StorageService.saveActiveOrders(updatedActiveOrders);
+
+    if (tableId) {
+      const updatedTables = tables.map((t) =>
+        t.id === tableId
+          ? {
+              ...t,
+              status: 'terisi' as const,
+              orderId: orderToSave.id,
+              totalAmount: orderToSave.total,
+              itemsCount: orderToSave.items.reduce((s, i) => s + i.quantity, 0),
+              openedAt: date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            }
+          : t
+      );
+      setTables(updatedTables);
+      StorageService.saveTables(updatedTables);
+    }
+
+    setOrderSheetState({ isOpen: false, orderType: 'meja' });
+
+    if (printOption === 'bluetooth') {
+      await PrinterService.printOrder(orderToSave, profile, printerConfig, true);
+      setReceiptModalState({
+        isOpen: true,
+        order: orderToSave,
+        isKitchenSlip: true,
+      });
+      showNotification(`Pesanan ${tableName} tersimpan & Struk Dapur dicetak.`);
+    } else {
+      showNotification(`Pesanan ${tableName} berhasil disimpan.`);
+    }
+  };
+
+  const handleProceedToPay = (table: TableItem) => {
+    if (!table.orderId || !activeOrders[table.orderId]) {
+      alert('Data pesanan meja tidak ditemukan.');
+      return;
+    }
+    setCheckoutOrder(activeOrders[table.orderId]);
+  };
+
+  const handleCompletePayment = async (
+    completedOrder: Order,
+    printOption: 'bluetooth' | 'pdf' | 'both' | 'none'
+  ) => {
+    StorageService.addTransaction(completedOrder);
+    setHistory([completedOrder, ...history]);
+
+    const copyActive = { ...activeOrders };
+    delete copyActive[completedOrder.id];
+    setActiveOrders(copyActive);
+    StorageService.saveActiveOrders(copyActive);
+
+    if (completedOrder.tableId) {
+      const updatedTables = tables.map((t) =>
+        t.id === completedOrder.tableId
+          ? {
+              ...t,
+              status: 'kosong' as const,
+              orderId: undefined,
+              totalAmount: undefined,
+              itemsCount: undefined,
+              openedAt: undefined,
+            }
+          : t
+      );
+      setTables(updatedTables);
+      StorageService.saveTables(updatedTables);
+    }
+
+    setCheckoutOrder(null);
+
+    if (printOption === 'bluetooth' || printOption === 'both') {
+      await PrinterService.printOrder(completedOrder, profile, printerConfig, false);
+      setReceiptModalState({
+        isOpen: true,
+        order: completedOrder,
+        isKitchenSlip: false,
+      });
+      showNotification('Pembayaran LUNAS! Struk nota dicetak ke printer.');
+    } else if (printOption === 'pdf') {
+      setReceiptModalState({
+        isOpen: true,
+        order: completedOrder,
+        isKitchenSlip: false,
+      });
+      showNotification('Pembayaran LUNAS! Pratinjau struk PDF siap disimpan.');
+    } else {
+      showNotification('Pembayaran LUNAS! Transaksi tersimpan rapi.');
+    }
+  };
+
+  const handleClearTable = (table: TableItem) => {
+    if (table.orderId) {
+      const copy = { ...activeOrders };
+      delete copy[table.orderId];
+      setActiveOrders(copy);
+      StorageService.saveActiveOrders(copy);
+    }
+    const updated = tables.map((t) =>
+      t.id === table.id
+        ? {
+            ...t,
+            status: 'kosong' as const,
+            orderId: undefined,
+            totalAmount: undefined,
+            itemsCount: undefined,
+            openedAt: undefined,
+          }
+        : t
+    );
+    setTables(updated);
+    StorageService.saveTables(updated);
+    showNotification(`${table.name} berhasil dikosongkan.`);
+  };
+
+  // Helper counts
+  const occupiedTablesCount = tables.filter((t) => t.status !== 'kosong').length;
+  const pendingApprovalsCount = letters.filter((l) => l.status.startsWith('pending')).length;
+
+  const getBaksoPageTitle = () => {
+    switch (activeBaksoTab) {
+      case 'kasir':
+        return { title: 'Bakso Qu 1.0', subtitle: 'Kasir & Denah Meja' };
+      case 'bahan':
+        return { title: 'Modal & Bahan', subtitle: 'Manajemen Stok Gudang' };
+      case 'omset':
+        return { title: 'Omset & Pendapatan', subtitle: 'Ringkasan Keuangan' };
+      case 'laporan':
+        return { title: 'Laporan Transaksi', subtitle: 'Riwayat Penjualan & Ekspor' };
+      case 'setting':
+        return { title: 'Pengaturan Aplikasi', subtitle: 'Profil Usaha & Bluetooth' };
+      default:
+        return { title: 'Bakso Qu 1.0', subtitle: 'POS Restoran' };
+    }
+  };
+
+  const baksoPageInfo = getBaksoPageTitle();
+
+  const getAppQuModuleName = () => {
+    switch (activeAppQuModule) {
+      case 'paguyuban':
+        return 'PaguyubanQu (Sosial & Kas)';
+      case 'warga':
+        return 'WargaQu (Buku Induk Warga)';
+      case 'usaha':
+        return 'UsahaQu (Lapak & Switch POS)';
+      case 'area':
+        return 'AreaQu (Peta & Sewa Lapak)';
+      case 'siaga':
+        return 'SiagaQu (Tombol Darurat & Ronda)';
+      case 'chat':
+        return 'ChatQu (Percakapan & Notifikasi)';
+      case 'muamalah':
+        return 'MuamalahQu (Pasar & Konsinyasi)';
+      case 'setting':
+        return 'Pengaturan & Auto-Update';
+      case 'arsitektur':
+        return 'Dokumen Arsitektur & DB';
+      default:
+        return 'WargaQu Ecosystem';
+    }
+  };
+
+  return (
+    <AndroidFrame
+      appLabel={
+        appMode === 'appqu'
+          ? 'WargaQu'
+          : appMode === 'baksoqu'
+          ? 'BaksoQu'
+          : appMode === 'bengkelqu'
+          ? 'BengkelQu'
+          : appMode === 'klinikqu'
+          ? 'KlinikQu'
+          : appMode === 'ritelqu'
+          ? 'RitelQu'
+          : appMode === 'kulinerqu'
+          ? 'KulinerQu'
+          : appMode === 'transportasiqu'
+          ? 'TransportasiQu'
+          : appMode === 'proyekqu'
+          ? 'ProyekQu'
+          : appMode === 'lapakqu'
+          ? 'LapakQu'
+          : appMode === 'muamalahqu'
+          ? 'MuamalahQu'
+          : 'PelayananQu'
+      }
+    >
+      {/* Toast Notification Banner */}
+      {notification && (
+        <div className="absolute top-14 left-4 right-4 z-50 bg-stone-900 text-amber-300 px-3.5 py-2 rounded-2xl shadow-xl border border-amber-500/40 text-xs font-semibold flex items-center justify-between animate-in fade-in slide-in-from-top duration-200">
+          <span>{notification}</span>
+        </div>
+      )}
+
+      {/* Top Floating Auto-Update Notification Banner */}
+      {availableUpdate && availableUpdate.hasUpdate && (
+        <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white px-3.5 py-2 flex items-center justify-between text-xs font-semibold shadow-md shrink-0 z-40 border-b border-emerald-500/30">
+          <div className="flex items-center gap-2 truncate">
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+            <span className="truncate">Rilis Baru: WargaQu v{availableUpdate.latestVersion}</span>
+          </div>
+          <button
+            onClick={() => setIsUpdateModalOpen(true)}
+            className="px-2.5 py-1 rounded-full bg-white text-emerald-900 text-[11px] font-extrabold shadow-sm hover:bg-emerald-50 active:scale-95 transition-all shrink-0 cursor-pointer flex items-center gap-1"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <span>Langsung Pasang</span>
+          </button>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 1. APPQU ECOSYSTEM WORKSPACE */}
+      {/* ========================================================= */}
+      {appMode === 'appqu' && (
+        <div
+          className={`flex-1 flex flex-col relative overflow-hidden transition-colors duration-200 ${
+            theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900'
+          }`}
+        >
+          {/* WargaQu Top Header (Header Dinamis Berdasarkan Modul Yang Dipilih) */}
+          <AppQuHeader
+            currentUser={currentUser}
+            activeModule={activeAppQuModule}
+            activeModuleName={getAppQuModuleName()}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            activeOrganization={activeOrg}
+            onOpenSwitchOrgModal={() => setIsPaguyubanSwitchOrgOpen(true)}
+            onOpenAddOrgModal={() => setIsPaguyubanAddOrgOpen(true)}
+            onOpenAddProduk={() => {
+              setActiveAppQuModule('muamalah');
+              setMuamalahSubTab('tambah');
+            }}
+            onSwitchToPOS={handleSwitchToBaksoQu}
+            onOpenAddResident={() => setIsAddResidentFromHeader(true)}
+            onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
+            onCheckUpdate={() => setIsUpdateModalOpen(true)}
+            availableUpdate={availableUpdate}
+            onOpenSettingsSidebar={() => setIsSettingsDrawerOpen(true)}
+            isAreaQu={activeAppQuModule === 'area'}
+            areaRadiusMeters={areaRadiusMeters}
+            onSelectAreaRadius={(radius) => {
+              setAreaRadiusMeters(radius);
+              const label = radius >= 1000 ? `${radius / 1000} km` : `${radius}m`;
+              showNotification(`Radius filter diubah ke: ${label}`);
+            }}
+            areaCategory={areaCategory}
+            onSelectAreaCategory={(cat) => {
+              setAreaCategory(cat);
+              const catLabels: Record<string, string> = {
+                all: 'Semua Titik',
+                lapak: 'Lapak & Warung',
+                transportasi: 'Kurir 🛵',
+                fasum: 'Fasum & Ronda',
+                titik_netral: 'Titik Netral Parpol',
+              };
+              showNotification(`Filter titik: ${catLabels[cat] || cat}`);
+            }}
+            onOpenAreaRental={() => setIsAreaRentalModalOpen(true)}
+            onOpenAreaNeutrality={() => setIsAreaNeutralityModalOpen(true)}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenAdminCenter={() => setIsAdminCenterOpen(true)}
+            authSession={authSession}
+          />
+
+          {/* Module View Renderer */}
+          <main className="flex-1 flex flex-col relative overflow-hidden">
+            {activeAppQuModule === 'paguyuban' && (
+              <PaguyubanView
+                currentUser={currentUser}
+                feeds={feeds}
+                agenda={agenda}
+                kas={kas}
+                letters={letters}
+                activeSubTab={paguyubanSubTab}
+                onSelectSubTab={setPaguyubanSubTab}
+                theme={theme}
+                hideInternalHeader={true}
+                isSwitchOrgModalOpen={isPaguyubanSwitchOrgOpen}
+                onCloseSwitchOrgModal={() => setIsPaguyubanSwitchOrgOpen(false)}
+                isAddOrgModalOpen={isPaguyubanAddOrgOpen}
+                onCloseAddOrgModal={() => setIsPaguyubanAddOrgOpen(false)}
+                onOrganizationChanged={(org) => setActiveOrg(org)}
+                onUpdateFeeds={(newF) => {
+                  setFeeds(newF);
+                  AppQuStorageService.saveFeeds(newF);
+                }}
+                onUpdateAgenda={(newA) => {
+                  setAgenda(newA);
+                  AppQuStorageService.saveAgenda(newA);
+                }}
+                onUpdateKas={(newK) => {
+                  setKas(newK);
+                  AppQuStorageService.saveKas(newK);
+                }}
+                onUpdateLetters={(newL) => {
+                  setLetters(newL);
+                  AppQuStorageService.saveLetters(newL);
+                }}
+                showNotification={showNotification}
+              />
+            )}
+
+            {activeAppQuModule === 'warga' && (
+              <div className="flex-1 overflow-y-auto">
+                <WargaView
+                  currentUser={currentUser}
+                  residents={residents}
+                  theme={theme}
+                  isAddResidentExternalOpen={isAddResidentFromHeader}
+                  onCloseAddResidentExternal={() => setIsAddResidentFromHeader(false)}
+                  onUpdateResidents={(newR) => {
+                    setResidents(newR);
+                    AppQuStorageService.saveResidents(newR);
+                  }}
+                  showNotification={showNotification}
+                />
+              </div>
+            )}
+
+            {activeAppQuModule === 'usaha' && (
+              <UsahaQuView
+                currentUser={currentUser}
+                businesses={businesses}
+                activeSubTab={usahaSubTab}
+                theme={theme}
+                onSelectSubTab={(tab) => setUsahaSubTab(tab as any)}
+                onSwitchToBaksoQu={handleSwitchToBaksoQu}
+                onSwitchToBengkelQu={handleSwitchToBengkelQu}
+                onSwitchToKlinikQu={handleSwitchToKlinikQu}
+                onSwitchToRitelQu={handleSwitchToRitelQu}
+                onSwitchToKulinerQu={handleSwitchToKulinerQu}
+                onSwitchToTransportasiQu={handleSwitchToTransportasiQu}
+                onSwitchToPelayananQu={handleSwitchToPelayananQu}
+                onSwitchToProyekQu={handleSwitchToProyekQu}
+                onSwitchToLapakQu={handleSwitchToLapakQu}
+                onSwitchToMuamalahQu={handleSwitchToMuamalahQu}
+                onOpenAreaQu={() => setActiveAppQuModule('area')}
+                onOpenChat={(threadId) => {
+                  setSelectedChatThreadId(threadId || null);
+                  setActiveAppQuModule('chat');
+                }}
+                onUpdateBusinesses={(newB) => {
+                  setBusinesses(newB);
+                  AppQuStorageService.saveBusinesses(newB);
+                }}
+                showNotification={showNotification}
+              />
+            )}
+
+            {activeAppQuModule === 'area' && (
+              <AreaQuView
+                currentUser={currentUser}
+                areaPoints={areaPoints}
+                couriers={couriers}
+                activeSubTab={areaSubTab}
+                theme={theme}
+                onSelectSubTab={(tab) => setAreaSubTab(tab as any)}
+                selectedRadiusMeters={areaRadiusMeters}
+                onSelectRadius={setAreaRadiusMeters}
+                selectedCategory={areaCategory}
+                onSelectCategory={setAreaCategory}
+                isRentalModalOpen={isAreaRentalModalOpen}
+                onCloseRentalModal={() => setIsAreaRentalModalOpen(false)}
+                isNeutralityModalOpen={isAreaNeutralityModalOpen}
+                onCloseNeutralityModal={() => setIsAreaNeutralityModalOpen(false)}
+                onOpenUsaha={() => setActiveAppQuModule('usaha')}
+                onOpenChat={(threadId) => {
+                  setSelectedChatThreadId(threadId || null);
+                  setActiveAppQuModule('chat');
+                }}
+                showNotification={showNotification}
+              />
+            )}
+
+            {activeAppQuModule === 'siaga' && (
+              <SiagaQuView
+                currentUser={currentUser}
+                residents={residents}
+                checkpoints={checkpoints}
+                patrolLogs={patrolLogs}
+                musibahList={musibahList}
+                piketTasks={piketTasks}
+                activeSubTab={siagaSubTab}
+                theme={theme}
+                onSelectSubTab={setSiagaSubTab}
+                onUpdateCheckpoints={(newCp) => {
+                  setCheckpoints(newCp);
+                  AppQuStorageService.saveCheckpoints(newCp);
+                }}
+                onUpdatePatrolLogs={(newLogs) => {
+                  setPatrolLogs(newLogs);
+                  AppQuStorageService.savePatrolLogs(newLogs);
+                }}
+                onUpdateMusibah={(newM) => {
+                  setMusibahList(newM);
+                  AppQuStorageService.saveMusibah(newM);
+                }}
+                onUpdatePiket={(newP) => {
+                  setPiketTasks(newP);
+                  AppQuStorageService.savePiket(newP);
+                }}
+                showNotification={showNotification}
+              />
+            )}
+
+            {activeAppQuModule === 'chat' && (
+              <ChatQuView
+                currentUser={currentUser}
+                initialThreadId={selectedChatThreadId}
+                activeCategory={chatSubTab}
+                theme={theme}
+                onSelectCategory={setChatSubTab}
+                onOpenPanic={() => setActiveAppQuModule('siaga')}
+                showNotification={showNotification}
+              />
+            )}
+
+            {/* MuamalahQu on Main Ecosystem Navigation */}
+            {activeAppQuModule === 'muamalah' && (
+              <MuamalahQuView
+                currentUser={currentUser}
+                activeSubTab={muamalahSubTab}
+                onSelectSubTab={(tab) => setMuamalahSubTab(tab as any)}
+                onBackToAppQu={() => setActiveAppQuModule('paguyuban')}
+                showNotification={showNotification}
+                theme={theme}
+                hideHeader={true}
+              />
+            )}
+
+            {activeAppQuModule === 'setting' && (
+              <SettingView
+                profile={profile}
+                theme={theme}
+                onSaveProfile={(newProf) => {
+                  setProfile(newProf);
+                  StorageService.saveProfile(newProf);
+                  showNotification('Profil unit berhasil disimpan.');
+                }}
+                printerConfig={printerConfig}
+                onSavePrinterConfig={(newCfg) => {
+                  setPrinterConfig(newCfg);
+                  StorageService.savePrinterConfig(newCfg);
+                  showNotification('Konfigurasi printer berhasil disimpan.');
+                }}
+                menuList={menuList}
+                onSaveMenu={(newMenu) => {
+                  setMenuList(newMenu);
+                  StorageService.saveMenu(newMenu);
+                  showNotification('Daftar menu berhasil diperbarui.');
+                }}
+                currentUser={currentUser}
+                onUpdateCurrentUser={(updated) => {
+                  setCurrentUser(updated);
+                  AppQuStorageService.saveCurrentUser(updated);
+                }}
+                residents={residents}
+                onUpdateResidents={(newR) => {
+                  setResidents(newR);
+                  AppQuStorageService.saveResidents(newR);
+                }}
+                onOpenRoleModal={() => setIsRoleModalOpen(true)}
+                onOpenHierarchy={() => setIsHierarchyModalOpen(true)}
+                witnessCount={currentUser.witnessCount}
+                onNavigateToModule={(mod) => setActiveAppQuModule(mod as any)}
+                showNotification={showNotification}
+                initialSubTab={settingSubTab}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onOpenAdminCenter={() => setIsAdminCenterOpen(true)}
+                authSession={authSession}
+              />
+            )}
+
+            {activeAppQuModule === 'arsitektur' && (
+              <div className="flex-1 overflow-y-auto">
+                <ArsitekturView theme={theme} />
+              </div>
+            )}
+          </main>
+
+          {/* AppQu Bottom Navigation Bar (Compact Single Row, Modul Switcher + Dynamic Sub-menus) */}
+          <AppQuBottomNav
+            activeModule={activeAppQuModule}
+            onSelectModule={(mod) => {
+              if (mod === 'chat') setSelectedChatThreadId(null);
+              setActiveAppQuModule(mod);
+            }}
+            onOpenHierarchy={() => setIsHierarchyModalOpen(true)}
+            onOpenRoleModal={() => setIsRoleModalOpen(true)}
+            onOpenSettingsDrawer={() => setIsSettingsDrawerOpen(true)}
+            onOpenModuleSwitcher={() => setIsModuleSwitcherOpen(true)}
+            activeSubTab={getCurrentModuleSubTab()}
+            onSelectSubTab={handleSelectSubTab}
+            unreadChatCount={1}
+            pendingApprovalsCount={
+              currentUser.roleTier === 'pengurus' || currentUser.roleTier === 'governance' || currentUser.roleTier === 'tier2_pengurus_rt'
+                ? pendingApprovalsCount
+                : 0
+            }
+            witnessCount={currentUser.witnessCount || 0}
+            theme={theme}
+          />
+
+          {/* Hierarchy & Chain of Trust Modal Dialog (Strictly Tier 1 & 2 Saja) */}
+          <HierarchyModal
+            isOpen={isHierarchyModalOpen}
+            onClose={() => setIsHierarchyModalOpen(false)}
+            currentUser={currentUser}
+            pendingList={pendingVerifications}
+            onApproveResident={handleApproveResident}
+            onRejectResident={handleRejectResident}
+            onRequestWitness={handleRequestWitness}
+            showNotification={showNotification}
+          />
+
+          {/* Interactive Role Switcher Modal (Tier 1 & 2 RBAC + POS Switch) */}
+          <RoleSwitcherModal
+            isOpen={isRoleModalOpen}
+            onClose={() => setIsRoleModalOpen(false)}
+            currentUser={currentUser}
+            onChangeUser={handleChangeUser}
+            onSwitchToBaksoQu={handleSwitchToBaksoQu}
+            onSwitchToBengkelQu={handleSwitchToBengkelQu}
+            onSwitchToKlinikQu={handleSwitchToKlinikQu}
+            onSwitchToRitelQu={handleSwitchToRitelQu}
+            onSwitchToKulinerQu={handleSwitchToKulinerQu}
+            onSwitchToTransportasiQu={handleSwitchToTransportasiQu}
+            onSwitchToPelayananQu={handleSwitchToPelayananQu}
+            onSwitchToProyekQu={handleSwitchToProyekQu}
+            onSwitchToLapakQu={handleSwitchToLapakQu}
+            onSwitchToMuamalahQu={handleSwitchToMuamalahQu}
+            onOpenArsitektur={() => setActiveAppQuModule('arsitektur')}
+          />
+
+          {/* Settings / Opsi Hidden Left Sidebar Drawer (Tampilkan Sub Menunya) */}
+          <SettingsSidebarDrawer
+            isOpen={isSettingsDrawerOpen}
+            onClose={() => setIsSettingsDrawerOpen(false)}
+            currentUser={currentUser}
+            activeSubTab={settingSubTab}
+            onSelectSubTab={(subTab) => {
+              setSettingSubTab(subTab);
+              if (subTab === 'warga') {
+                setActiveAppQuModule('warga');
+              } else if (subTab === 'skema') {
+                setActiveAppQuModule('arsitektur');
+              } else {
+                setActiveAppQuModule('setting');
+              }
+            }}
+            onOpenHierarchy={() => setIsHierarchyModalOpen(true)}
+            onOpenRoleModal={() => setIsRoleModalOpen(true)}
+            onOpenAdminCenter={() => setIsAdminCenterOpen(true)}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            authSession={authSession}
+          />
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 2. BAKSOQU 1.0 POS WORKSTATION (SWITCH MASTER USAHAQU) */}
+      {/* ========================================================= */}
+      {appMode === 'baksoqu' && (
+        <div
+          className={`flex-1 flex flex-col relative overflow-hidden transition-colors duration-200 ${
+            theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-stone-100 text-stone-900'
+          }`}
+        >
+          {/* BaksoQu Top Header with Back to WargaQu Button */}
+          <HeaderBar
+            title={baksoPageInfo.title}
+            subtitle={baksoPageInfo.subtitle}
+            onOpenDrawer={() => setIsDrawerOpen(true)}
+            onTakeawayClick={handleOpenBungkus}
+            printerConfig={printerConfig}
+            onOpenPrinterModal={() => setIsBluetoothModalOpen(true)}
+            showTakeawayBtn={activeBaksoTab === 'kasir'}
+            onBackToAppQu={handleReturnToAppQu}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+          />
+
+          {/* Quick Notice Banner */}
+          <div
+            className={`${
+              theme === 'dark'
+                ? 'bg-amber-600/90 text-stone-950 border-b border-amber-700'
+                : 'bg-amber-500 text-stone-950'
+            } px-3 py-1 text-[11px] font-bold flex items-center justify-between shadow-2xs`}
+          >
+            <span>Mode POS UsahaQu: Bakso Qu 1.0 (Aktif)</span>
+            <button
+              onClick={handleReturnToAppQu}
+              className="text-[10px] font-black underline hover:text-white cursor-pointer"
+            >
+              Kembali ke WargaQu ➔
+            </button>
+          </div>
+
+          {/* Main Content Area Based on Active Bakso Tab */}
+          <main
+            className={`flex-1 flex flex-col relative overflow-hidden transition-colors duration-200 ${
+              theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-stone-100 text-stone-900'
+            }`}
+          >
+            {activeBaksoTab === 'kasir' && (
+              <TableGrid
+                tables={tables}
+                activeOrders={activeOrders}
+                onSelectTable={handleSelectTable}
+                onAddTable={handleAddTable}
+                onReorderTables={handleReorderTables}
+                onDeleteTable={handleDeleteTable}
+                theme={theme}
+              />
+            )}
+
+            {activeBaksoTab === 'bahan' && (
+              <BahanView
+                theme={theme}
+                ingredients={ingredients}
+                onSaveIngredients={(newItems) => {
+                  setIngredients(newItems);
+                  StorageService.saveIngredients(newItems);
+                  showNotification('Data bahan baku diperbarui.');
+                }}
+              />
+            )}
+
+            {activeBaksoTab === 'omset' && <OmsetDashboard history={history} />}
+
+            {activeBaksoTab === 'laporan' && (
+              <LaporanView
+                history={history}
+                profile={profile}
+                onOpenReceipt={(ord) =>
+                  setReceiptModalState({ isOpen: true, order: ord, isKitchenSlip: false })
+                }
+              />
+            )}
+
+            {activeBaksoTab === 'setting' && (
+              <SettingView
+                theme={theme}
+                profile={profile}
+                onSaveProfile={(newProf) => {
+                  setProfile(newProf);
+                  StorageService.saveProfile(newProf);
+                }}
+                printerConfig={printerConfig}
+                onSavePrinterConfig={(newCfg) => {
+                  setPrinterConfig(newCfg);
+                  StorageService.savePrinterConfig(newCfg);
+                }}
+                menuList={menuList}
+                onSaveMenu={(newMenu) => {
+                  setMenuList(newMenu);
+                  StorageService.saveMenu(newMenu);
+                  showNotification('Daftar menu berhasil diperbarui.');
+                }}
+                currentUser={currentUser}
+                residents={residents}
+                onUpdateResidents={(newR) => {
+                  setResidents(newR);
+                  AppQuStorageService.saveResidents(newR);
+                }}
+                onOpenRoleModal={() => setIsRoleModalOpen(true)}
+                onOpenHierarchy={() => setIsHierarchyModalOpen(true)}
+                witnessCount={currentUser.witnessCount}
+                showNotification={showNotification}
+                initialSubTab="toko"
+              />
+            )}
+          </main>
+
+          {/* Fixed Bottom Navigation Bar for BaksoQu */}
+          <BottomNavBar
+            activeTab={activeBaksoTab}
+            onSelectTab={setActiveBaksoTab}
+            occupiedCount={occupiedTablesCount}
+            onOpenModuleSwitcher={() => setIsModuleSwitcherOpen(true)}
+          />
+
+          {/* Navigation Drawer (Sidebar) */}
+          <NavigationDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            activeTab={activeBaksoTab}
+            onSelectTab={setActiveBaksoTab}
+            profile={profile}
+            printerConfig={printerConfig}
+            occupiedTablesCount={occupiedTablesCount}
+            onBackToAppQu={handleReturnToAppQu}
+          />
+
+          {/* Quick Bluetooth Status Modal */}
+          <BluetoothModal
+            isOpen={isBluetoothModalOpen}
+            onClose={() => setIsBluetoothModalOpen(false)}
+            printerConfig={printerConfig}
+            onSavePrinterConfig={(cfg) => {
+              setPrinterConfig(cfg);
+              StorageService.savePrinterConfig(cfg);
+            }}
+            profile={profile}
+          />
+
+          {/* Order Bottom Sheet */}
+          <OrderBottomSheet
+            isOpen={orderSheetState.isOpen}
+            onClose={() => setOrderSheetState({ isOpen: false, orderType: 'meja' })}
+            orderType={orderSheetState.orderType}
+            tableName={orderSheetState.tableName}
+            tableId={orderSheetState.tableId}
+            existingOrder={orderSheetState.existingOrder}
+            menuList={menuList}
+            onSaveAndPrint={handleSaveAndPrintOrder}
+          />
+
+          {/* Table Action Sheet */}
+          <TableActionModal
+            isOpen={selectedTableForAction !== null}
+            onClose={() => setSelectedTableForAction(null)}
+            table={selectedTableForAction}
+            activeOrder={
+              selectedTableForAction?.orderId
+                ? activeOrders[selectedTableForAction.orderId] || null
+                : null
+            }
+            onPay={() => {
+              if (selectedTableForAction) handleProceedToPay(selectedTableForAction);
+            }}
+            onAddMoreMenu={() => {
+              if (selectedTableForAction) {
+                const existing = selectedTableForAction.orderId
+                  ? activeOrders[selectedTableForAction.orderId]
+                  : null;
+                setOrderSheetState({
+                  isOpen: true,
+                  orderType: 'meja',
+                  tableId: selectedTableForAction.id,
+                  tableName: selectedTableForAction.name,
+                  existingOrder: existing,
+                });
+              }
+            }}
+            onViewReceipt={() => {
+              if (selectedTableForAction?.orderId && activeOrders[selectedTableForAction.orderId]) {
+                setReceiptModalState({
+                  isOpen: true,
+                  order: activeOrders[selectedTableForAction.orderId],
+                  isKitchenSlip: true,
+                });
+              }
+            }}
+            onClearTable={() => {
+              if (selectedTableForAction) handleClearTable(selectedTableForAction);
+            }}
+          />
+
+          {/* Checkout Screen Sheet */}
+          <CheckoutModal
+            isOpen={checkoutOrder !== null}
+            onClose={() => setCheckoutOrder(null)}
+            order={checkoutOrder}
+            printerConfig={printerConfig}
+            onCompletePayment={handleCompletePayment}
+          />
+
+          {/* Thermal Receipt Preview Modal */}
+          <ReceiptModal
+            isOpen={receiptModalState.isOpen}
+            onClose={() => setReceiptModalState({ isOpen: false, order: null })}
+            order={receiptModalState.order}
+            profile={profile}
+            printerConfig={printerConfig}
+            isKitchenSlip={receiptModalState.isKitchenSlip}
+          />
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 3. BENGKELQU SMART WORKSHOP (SWITCH MASTER USAHAQU)       */}
+      {/* ========================================================= */}
+      {appMode === 'bengkelqu' && (
+        <BengkelQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 4. KLINIKQU MEDICAL CLINIC (SWITCH MASTER USAHAQU)        */}
+      {/* ========================================================= */}
+      {appMode === 'klinikqu' && (
+        <KlinikQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 5. RITELQU TOKO KELONTONG (SWITCH MASTER USAHAQU)         */}
+      {/* ========================================================= */}
+      {appMode === 'ritelqu' && (
+        <RitelQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 6. KULINERQU POS KULINER (KIOS, MANGKAL & KELILING)       */}
+      {/* ========================================================= */}
+      {appMode === 'kulinerqu' && (
+        <KulinerQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 7. TRANSPORTASIQU (6 SUB-KATEGORI ANGKUTAN & LOGISTIK)     */}
+      {/* ========================================================= */}
+      {appMode === 'transportasiqu' && (
+        <TransportasiQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 8. PELAYANANQU (6 SUB-KATEGORI JASA & LAYANAN WARGA)       */}
+      {/* ========================================================= */}
+      {appMode === 'pelayananqu' && (
+        <PelayananQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 9. USAHAQU - PROYEK (RAB, VOLUME & PEMBAYARAN TERMIN)     */}
+      {/* ========================================================= */}
+      {appMode === 'proyekqu' && (
+        <ProyekQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          onSwitchToRitelQu={handleSwitchToRitelQu}
+          onSwitchToPelayananQu={handleSwitchToPelayananQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 10. LAPAKQU (SEWA LAPAK & PROPERTI WARGA)                 */}
+      {/* ========================================================= */}
+      {appMode === 'lapakqu' && (
+        <LapakQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 11. MUAMALAHQU (PASAR & TITIP JUAL WARGA - LIGHT/DARK)    */}
+      {/* ========================================================= */}
+      {appMode === 'muamalahqu' && (
+        <MuamalahQuView
+          currentUser={currentUser}
+          onBackToAppQu={handleReturnToAppQu}
+          showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* Global In-App Update Modal */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        updateInfo={availableUpdate}
+      />
+
+      {/* Auth & Security Modal (Login, Device Fingerprint, Session Lock & Transfer) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentSession={authSession}
+        onLoginSuccess={(session) => {
+          setAuthSession(session);
+          showNotification(`Login berhasil: ${session.name}! Sesi terkunci.`);
+          if (session.email.toLowerCase() === ADMIN_MASTER_EMAIL.toLowerCase()) {
+            setIsAdminCenterOpen(true);
+          }
+        }}
+        onLogout={() => {
+          AuthSecurityService.clearSession();
+          setAuthSession(null);
+          showNotification('Berhasil keluar dari akun.');
+        }}
+      />
+
+      {/* Admin Command Center (Hidden from public, strictly for hendri.bageur20@gmail.com) */}
+      <AdminCommandCenter
+        isOpen={isAdminCenterOpen}
+        onClose={() => setIsAdminCenterOpen(false)}
+        currentSession={authSession}
+        onOpenLoginModal={() => setIsAuthModalOpen(true)}
+        residents={residents}
+        kasTransactions={kas}
+      />
+
+      {/* Mass Broadcast Popup Modal for Warga */}
+      <BroadcastPopupModal
+        broadcast={activeBroadcast}
+        onClose={() => setActiveBroadcast(null)}
+      />
+
+      {/* Switch Modul Grid Modal: PaguyubanQu, AreaQu, MuamalahQu, UsahaQu, ChatQu, SiagaQu */}
+      <ModuleSwitcherModal
+        isOpen={isModuleSwitcherOpen}
+        onClose={() => setIsModuleSwitcherOpen(false)}
+        activeModule={activeAppQuModule}
+        currentAppMode={appMode}
+        onSelectModule={handleSelectModuleFromSwitcher}
+        unreadChatCount={1}
+        pendingApprovalsCount={
+          currentUser.roleTier === 'pengurus' ||
+          currentUser.roleTier === 'governance' ||
+          currentUser.roleTier === 'tier2_pengurus_rt'
+            ? pendingApprovalsCount
+            : 0
+        }
+        activeEmergencyCount={0}
+      />
+    </AndroidFrame>
+  );
+}

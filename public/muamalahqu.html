@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuamalahQu - Pasar & Ekonomi Warga</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            950: '#022c22'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body id="app-body" class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Header / Navbar (Switch Mode Light / Dark) -->
+    <header id="main-header" class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 shadow-sm transition-colors duration-200">
+        <div class="max-w-md mx-auto flex justify-between items-center gap-2">
+            <div class="flex items-center space-x-2">
+                <a href="./index.html" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm" title="Kembali ke AppQu">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-200">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <h1 id="header-title" class="font-bold text-base leading-tight text-slate-900">MuamalahQu</h1>
+                    <p id="header-sub" class="text-xs text-emerald-700 font-medium">Ekonomi Bersih & Pasar Warga</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <!-- Theme Mode Switch Button (Light / Dark) -->
+                <button type="button" onclick="toggleThemeMode()" id="theme-btn" class="text-xs px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i id="theme-icon" class="fa-solid fa-moon text-slate-700"></i>
+                    <span id="theme-text">Dark</span>
+                </button>
+                <span id="badge-verified" class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-300 hidden sm:inline-flex items-center">
+                    <i class="fa-solid fa-shield-halved mr-1 text-emerald-600"></i> Terverifikasi
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav id="main-nav" class="bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-2 sticky top-[61px] z-20 transition-colors duration-200">
+        <div class="max-w-md mx-auto flex space-x-2">
+            <button onclick="switchTab('pasar')" id="btn-tab-pasar" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-emerald-600 text-white transition shadow-sm">
+                <i class="fa-solid fa-store mr-1"></i> Pasar Warga
+            </button>
+            <button onclick="switchTab('konsinyasi')" id="btn-tab-konsinyasi" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+                <i class="fa-solid fa-handshake mr-1"></i> Titip Jual
+            </button>
+        </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 pb-20 space-y-4">
+
+        <!-- Search Bar -->
+        <div id="search-container" class="bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center space-x-2 shadow-xs transition-colors">
+            <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+            <input type="text" id="search-input" oninput="renderProduk(); renderKonsinyasi();" placeholder="Cari produk, penjual, atau warung..." class="w-full bg-transparent text-xs focus:outline-none placeholder:text-slate-400">
+        </div>
+
+        <!-- TAB 1: PASAR WARGA (Marketplace C2C) -->
+        <div id="tab-pasar" class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 id="heading-etalase" class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Etalase Produk Warga</h2>
+                <button onclick="openModalTambahProduk()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition shadow flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-plus mr-1"></i> Jual Barang
+                </button>
+            </div>
+
+            <!-- Filter Kategori -->
+            <div class="flex space-x-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+                <button onclick="filterKategori('Semua')" class="kat-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold whitespace-nowrap shadow-sm">Semua</button>
+                <button onclick="filterKategori('Kuliner')" class="kat-btn px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium hover:bg-slate-100 whitespace-nowrap">Kuliner</button>
+                <button onclick="filterKategori('Sembako')" class="kat-btn px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium hover:bg-slate-100 whitespace-nowrap">Sembako</button>
+                <button onclick="filterKategori('Preloved')" class="kat-btn px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium hover:bg-slate-100 whitespace-nowrap">Preloved</button>
+                <button onclick="filterKategori('Jasa')" class="kat-btn px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium hover:bg-slate-100 whitespace-nowrap">Jasa Warga</button>
+            </div>
+
+            <!-- Daftar Produk Warga -->
+            <div id="grid-produk" class="grid grid-cols-2 gap-3">
+                <!-- Data dirender via JavaScript -->
+            </div>
+        </div>
+
+        <!-- TAB 2: TITIP JUAL / KONSINYASI (B2B Lokal) -->
+        <div id="tab-konsinyasi" class="space-y-4 hidden">
+            <div class="flex justify-between items-center">
+                <h2 id="heading-konsinyasi" class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Titip Jual ke Warung Mitra</h2>
+                <button onclick="openModalTambahKonsinyasi()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition shadow flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-plus mr-1"></i> Ajukan Titipan
+                </button>
+            </div>
+
+            <div id="info-konsinyasi" class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-900 font-medium">
+                <i class="fa-solid fa-circle-info mr-1 text-emerald-600"></i> Kerjasama penitipan produk rumahan ke warung tetangga/RitelQu. Transparan dan bagi hasil disepakati bersama.
+            </div>
+
+            <!-- Daftar Pengajuan Konsinyasi -->
+            <div id="list-konsinyasi" class="space-y-3">
+                <!-- Data dirender via JavaScript -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL TAMBAH PRODUK PASAR -->
+    <div id="modal-produk" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-produk-content" class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-900">Tambah Produk / Jasa Baru</h3>
+                <button onclick="closeModalTambahProduk()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-produk" onsubmit="simpanProduk(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Nama Produk / Jasa</label>
+                    <input type="text" id="p-nama" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: Kripik Singkong Balado">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Kategori</label>
+                    <select id="p-kategori" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600">
+                        <option value="Kuliner">Kuliner</option>
+                        <option value="Sembako">Sembako</option>
+                        <option value="Preloved">Preloved</option>
+                        <option value="Jasa">Jasa Warga</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Harga (Rp)</label>
+                    <input type="number" id="p-harga" required min="100" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: 15000">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Nama Penjual & Blok Rumah</label>
+                    <input type="text" id="p-penjual" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: Ibu Siti (Blok G No. 5)">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Nomor WhatsApp (untuk order)</label>
+                    <input type="text" id="p-wa" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="08xxxxxxxxxx">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition mt-2 shadow cursor-pointer">Simpan & Tayangkan</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH KONSINYASI -->
+    <div id="modal-konsinyasi" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-konsinyasi-content" class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-900">Pengajuan Titip Jual (Konsinyasi)</h3>
+                <button onclick="closeModalTambahKonsinyasi()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-konsinyasi" onsubmit="simpanKonsinyasi(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Nama Produk Titipan</label>
+                    <input type="text" id="k-nama" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: Kue Basah / Rempeyek">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Nama Produsen & Blok</label>
+                    <input type="text" id="k-produsen" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: Bu Ani (Blok F)">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Warung Penitipan Tujuan</label>
+                    <input type="text" id="k-warung" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="Misal: Warung Pak RT / RitelQu Blok G">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Jumlah Titip</label>
+                        <input type="number" id="k-jumlah" required min="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="10">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Harga Titip (Rp)</label>
+                        <input type="number" id="k-harga" required min="100" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-600" placeholder="5000">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition mt-2 shadow cursor-pointer">Ajukan ke Warung</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const defaultProduk = [
+            { id: 1, nama: "Kripik Singkong Balado", kategori: "Kuliner", harga: 12000, penjual: "Ibu Siti (Blok G)", wa: "628123456789" },
+            { id: 2, nama: "Telur Ayam Petelur Segar (1 Kg)", kategori: "Sembako", harga: 26000, penjual: "Kandang Bageur (Blok G No.11)", wa: "628123456789" },
+            { id: 3, nama: "Sepeda Anak Bekas Layak Pakai", kategori: "Preloved", harga: 150000, penjual: "Pak Budi (Blok C)", wa: "628123456789" },
+            { id: 4, nama: "Jasa Servis & Cuci AC Rumah", kategori: "Jasa", harga: 75000, penjual: "Mas Joko (Blok D)", wa: "628123456789" }
+        ];
+
+        const defaultKonsinyasi = [
+            { id: 1, produk: "Rempeyek Kacang", produsen: "Bu Ani (Blok F)", warung: "Warung Sembako Bu Wati", jumlah: 15, harga: 8000, status: "Aktif Titip" },
+            { id: 2, produk: "Kue Lapis Legit", produsen: "Pak Joko (Blok B)", warung: "RitelQu Utama", jumlah: 10, harga: 5000, status: "Terjual Sebagian" }
+        ];
+
+        let produkList = JSON.parse(localStorage.getItem('muamalah_produk')) || defaultProduk;
+        let konsinyasiList = JSON.parse(localStorage.getItem('muamalah_konsinyasi')) || defaultKonsinyasi;
+        let currentKategori = 'Semua';
+        let currentTab = 'pasar';
+
+        // THEME MODE SWITCH LOGIC (Light / Dark)
+        let themeMode = localStorage.getItem('muamalah_theme_mode') || 'light';
+
+        function applyTheme(mode) {
+            themeMode = mode;
+            localStorage.setItem('muamalah_theme_mode', mode);
+            const body = document.getElementById('app-body');
+            const header = document.getElementById('main-header');
+            const headerTitle = document.getElementById('header-title');
+            const nav = document.getElementById('main-nav');
+            const themeBtn = document.getElementById('theme-btn');
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+            const searchContainer = document.getElementById('search-container');
+            const headingEtalase = document.getElementById('heading-etalase');
+            const headingKonsinyasi = document.getElementById('heading-konsinyasi');
+            const infoKonsinyasi = document.getElementById('info-konsinyasi');
+            const modalPContent = document.getElementById('modal-produk-content');
+            const modalKContent = document.getElementById('modal-konsinyasi-content');
+
+            if (mode === 'dark') {
+                body.className = "bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200";
+                header.className = "bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-4 py-3 shadow-lg transition-colors duration-200";
+                headerTitle.className = "font-bold text-base leading-tight text-white";
+                nav.className = "bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-2 sticky top-[61px] z-20 transition-colors duration-200";
+                themeBtn.className = "text-xs px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer shadow-xs";
+                themeIcon.className = "fa-solid fa-sun text-amber-400";
+                themeText.innerText = "Light";
+                searchContainer.className = "bg-slate-900 border border-slate-800 text-white rounded-xl px-3 py-2 flex items-center space-x-2 shadow-xs transition-colors";
+                if(headingEtalase) headingEtalase.className = "text-xs font-extrabold text-slate-200 uppercase tracking-wider";
+                if(headingKonsinyasi) headingKonsinyasi.className = "text-xs font-extrabold text-slate-200 uppercase tracking-wider";
+                if(infoKonsinyasi) infoKonsinyasi.className = "bg-emerald-950/40 border border-emerald-800 p-3 rounded-xl text-xs text-emerald-200 font-medium";
+                if(modalPContent) modalPContent.className = "bg-slate-900 border border-slate-800 text-white w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl";
+                if(modalKContent) modalKContent.className = "bg-slate-900 border border-slate-800 text-white w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl";
+            } else {
+                body.className = "bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200";
+                header.className = "bg-white border-b border-slate-200 sticky top-0 z-30 px-4 py-3 shadow-sm transition-colors duration-200";
+                headerTitle.className = "font-bold text-base leading-tight text-slate-900";
+                nav.className = "bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-2 sticky top-[61px] z-20 transition-colors duration-200";
+                themeBtn.className = "text-xs px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs";
+                themeIcon.className = "fa-solid fa-moon text-slate-700";
+                themeText.innerText = "Dark";
+                searchContainer.className = "bg-white border border-slate-200 text-slate-900 rounded-xl px-3 py-2 flex items-center space-x-2 shadow-xs transition-colors";
+                if(headingEtalase) headingEtalase.className = "text-xs font-extrabold text-slate-800 uppercase tracking-wider";
+                if(headingKonsinyasi) headingKonsinyasi.className = "text-xs font-extrabold text-slate-800 uppercase tracking-wider";
+                if(infoKonsinyasi) infoKonsinyasi.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-900 font-medium";
+                if(modalPContent) modalPContent.className = "bg-white border border-slate-200 text-slate-900 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl";
+                if(modalKContent) modalKContent.className = "bg-white border border-slate-200 text-slate-900 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl";
+            }
+
+            // Update category button styling according to theme
+            filterKategori(currentKategori);
+            renderProduk();
+            renderKonsinyasi();
+        }
+
+        function toggleThemeMode() {
+            const nextMode = themeMode === 'light' ? 'dark' : 'light';
+            applyTheme(nextMode);
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const btnPasar = document.getElementById('btn-tab-pasar');
+            const btnKonsinyasi = document.getElementById('btn-tab-konsinyasi');
+
+            if(tab === 'pasar') {
+                document.getElementById('tab-pasar').classList.remove('hidden');
+                document.getElementById('tab-konsinyasi').classList.add('hidden');
+                btnPasar.className = "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-emerald-600 text-white transition shadow-sm";
+                btnKonsinyasi.className = themeMode === 'dark' 
+                    ? "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" 
+                    : "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition";
+                renderProduk();
+            } else {
+                document.getElementById('tab-pasar').classList.add('hidden');
+                document.getElementById('tab-konsinyasi').classList.remove('hidden');
+                btnKonsinyasi.className = "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-emerald-600 text-white transition shadow-sm";
+                btnPasar.className = themeMode === 'dark' 
+                    ? "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition" 
+                    : "flex-1 py-2 px-3 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition";
+                renderKonsinyasi();
+            }
+        }
+
+        function filterKategori(kat) {
+            currentKategori = kat;
+            document.querySelectorAll('.kat-btn').forEach(btn => {
+                if(btn.innerText.includes(kat)) {
+                    btn.className = "kat-btn px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold whitespace-nowrap shadow-sm";
+                } else {
+                    btn.className = themeMode === 'dark'
+                        ? "kat-btn px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium hover:bg-slate-800 whitespace-nowrap"
+                        : "kat-btn px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 font-medium hover:bg-slate-100 whitespace-nowrap";
+                }
+            });
+            renderProduk();
+        }
+
+        function renderProduk() {
+            const grid = document.getElementById('grid-produk');
+            if(!grid) return;
+            grid.innerHTML = '';
+            
+            const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+            const filtered = produkList.filter(p => {
+                const matchKat = currentKategori === 'Semua' || p.kategori === currentKategori;
+                const matchSearch = q === '' || p.nama.toLowerCase().includes(q) || p.penjual.toLowerCase().includes(q) || p.kategori.toLowerCase().includes(q);
+                return matchKat && matchSearch;
+            });
+            
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-xs font-medium">Belum ada produk di kategori ini.</div>`;
+                return;
+            }
+
+            const cardBg = themeMode === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900';
+            const textPenjual = themeMode === 'dark' ? 'text-slate-400' : 'text-slate-500';
+
+            filtered.forEach(p => {
+                grid.innerHTML += `
+                    <div class="${cardBg} border rounded-xl p-3 flex flex-col justify-between space-y-2 shadow-sm hover:shadow-md transition">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300">${p.kategori}</span>
+                                <button onclick="hapusProduk(${p.id})" class="text-slate-400 hover:text-rose-500 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                            <h3 class="font-bold text-xs mt-1.5 leading-snug">${p.nama}</h3>
+                            <p class="text-emerald-600 font-extrabold text-sm mt-1">Rp ${p.harga.toLocaleString('id-ID')}</p>
+                            <p class="text-[10px] ${textPenjual} font-medium mt-1"><i class="fa-solid fa-user-tag mr-1 text-slate-400"></i>${p.penjual}</p>
+                        </div>
+                        <a href="https://wa.me/${p.wa}?text=Halo%2C%20saya%20mau%20pesan%20${encodeURIComponent(p.nama)}%20yang%20ada%20di%20MuamalahQu." target="_blank" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 shadow-sm">
+                            <i class="fa-brands fa-whatsapp"></i> <span>Pesan</span>
+                        </a>
+                    </div>
+                `;
+            });
+        }
+
+        function renderKonsinyasi() {
+            const list = document.getElementById('list-konsinyasi');
+            if(!list) return;
+            list.innerHTML = '';
+
+            const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+            const filtered = konsinyasiList.filter(k => {
+                return q === '' || k.produk.toLowerCase().includes(q) || k.produsen.toLowerCase().includes(q) || k.warung.toLowerCase().includes(q);
+            });
+
+            if(filtered.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs font-medium">Belum ada pengajuan titip jual.</div>`;
+                return;
+            }
+
+            const cardBg = themeMode === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900';
+            const detailBg = themeMode === 'dark' ? 'bg-slate-800/60 border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700';
+
+            filtered.forEach(k => {
+                list.innerHTML += `
+                    <div class="${cardBg} border rounded-xl p-3 space-y-2 shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-xs">${k.produk}</h3>
+                                <p class="text-[10px] text-slate-400 font-medium mt-0.5">Produsen: ${k.produsen}</p>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="toggleStatusKonsinyasi(${k.id})" title="Klik ubah status" class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300">${k.status}</button>
+                                <button onclick="hapusKonsinyasi(${k.id})" class="text-slate-400 hover:text-rose-500 text-xs p-1"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                        <div class="${detailBg} border p-2 rounded-lg text-[11px] flex justify-between items-center font-medium">
+                            <span>Titip di: <strong>${k.warung}</strong></span>
+                            <span>Jml: <strong>${k.jumlah} pcs</strong> (@ Rp ${k.harga.toLocaleString('id-ID')})</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleStatusKonsinyasi(id) {
+            konsinyasiList = konsinyasiList.map(k => {
+                if(k.id === id) {
+                    let next = 'Aktif Titip';
+                    if(k.status === 'Aktif Titip') next = 'Terjual Sebagian';
+                    else if(k.status === 'Terjual Sebagian') next = 'Selesai / Lunas';
+                    return { ...k, status: next };
+                }
+                return k;
+            });
+            localStorage.setItem('muamalah_konsinyasi', JSON.stringify(konsinyasiList));
+            renderKonsinyasi();
+        }
+
+        function hapusProduk(id) {
+            if(confirm("Hapus produk ini dari pasar warga?")) {
+                produkList = produkList.filter(p => p.id !== id);
+                localStorage.setItem('muamalah_produk', JSON.stringify(produkList));
+                renderProduk();
+            }
+        }
+
+        function hapusKonsinyasi(id) {
+            if(confirm("Hapus data konsinyasi ini?")) {
+                konsinyasiList = konsinyasiList.filter(k => k.id !== id);
+                localStorage.setItem('muamalah_konsinyasi', JSON.stringify(konsinyasiList));
+                renderKonsinyasi();
+            }
+        }
+
+        function openModalTambahProduk() { document.getElementById('modal-produk').classList.remove('hidden'); }
+        function closeModalTambahProduk() { document.getElementById('modal-produk').classList.add('hidden'); }
+
+        function openModalTambahKonsinyasi() { document.getElementById('modal-konsinyasi').classList.remove('hidden'); }
+        function closeModalTambahKonsinyasi() { document.getElementById('modal-konsinyasi').classList.add('hidden'); }
+
+        function simpanProduk(e) {
+            e.preventDefault();
+            const baru = {
+                id: Date.now(),
+                nama: document.getElementById('p-nama').value,
+                kategori: document.getElementById('p-kategori').value,
+                harga: parseInt(document.getElementById('p-harga').value),
+                penjual: document.getElementById('p-penjual').value,
+                wa: document.getElementById('p-wa').value
+            };
+            produkList.unshift(baru);
+            localStorage.setItem('muamalah_produk', JSON.stringify(produkList));
+            closeModalTambahProduk();
+            document.getElementById('form-produk').reset();
+            renderProduk();
+        }
+
+        function simpanKonsinyasi(e) {
+            e.preventDefault();
+            const baru = {
+                id: Date.now(),
+                produk: document.getElementById('k-nama').value,
+                produsen: document.getElementById('k-produsen').value,
+                warung: document.getElementById('k-warung').value,
+                jumlah: parseInt(document.getElementById('k-jumlah').value),
+                harga: parseInt(document.getElementById('k-harga').value),
+                status: "Aktif Titip"
+            };
+            konsinyasiList.unshift(baru);
+            localStorage.setItem('muamalah_konsinyasi', JSON.stringify(konsinyasiList));
+            closeModalTambahKonsinyasi();
+            document.getElementById('form-konsinyasi').reset();
+            renderKonsinyasi();
+        }
+
+        // Initialize Theme & Content
+        applyTheme(themeMode);
+    </script>
+</body>
+</html>
