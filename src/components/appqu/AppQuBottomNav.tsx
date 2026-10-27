@@ -259,14 +259,14 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
   return (
     <>
       <nav
-        className={`w-full backdrop-blur-md border-t px-2 pt-1 flex items-center justify-between shrink-0 z-30 shadow-2xl select-none sticky bottom-0 transition-all ${
+        className={`w-full backdrop-blur-md border-t px-2 pt-1.5 pb-1 flex items-center justify-between shrink-0 z-30 shadow-2xl select-none sticky bottom-0 transition-all ${
           isDark
             ? 'bg-slate-900/98 border-slate-800 text-slate-400'
             : 'bg-white/98 border-slate-200 text-slate-600'
         }`}
         style={{
-          paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 0.5rem) + 0.25rem)',
-          minHeight: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 0.5rem) + 0.35rem)',
+          minHeight: 'calc(3.85rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
         {/* ========================================================= */}
@@ -299,19 +299,19 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
                 {/* Active Indicator Top Pill */}
                 {isActive && (
                   <span
-                    className={`absolute -top-1 w-5 h-0.5 ${meta.accentPill} rounded-full`}
+                    className={`absolute -top-1 w-6 h-0.5 ${meta.accentPill} rounded-full`}
                   />
                 )}
 
                 <div className="relative flex items-center justify-center">
                   <Icon
-                    className={`w-4.5 h-4.5 transition-transform duration-150 ${
-                      isActive ? `scale-105 ${meta.activeColor}` : ''
+                    className={`w-6 h-6 transition-transform duration-150 ${
+                      isActive ? `scale-110 ${meta.activeColor}` : ''
                     }`}
                   />
                   {item.badge !== null && item.badge !== undefined && (
                     <span
-                      className={`absolute -top-1 -right-2 text-[8px] font-black min-w-3.5 h-3.5 px-1 rounded-full flex items-center justify-center ring-1 ring-stone-900 shadow-xs ${
+                      className={`absolute -top-1.5 -right-2.5 text-[8.5px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center ring-1 ring-stone-900 shadow-xs ${
                         item.badgeColor || 'bg-stone-700 text-white'
                       }`}
                     >
@@ -321,7 +321,7 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
                 </div>
 
                 <span
-                  className={`text-[8px] xs:text-[8.5px] font-bold tracking-tight px-1.5 py-0.5 rounded-full mt-0.5 leading-none transition-all truncate max-w-full ${
+                  className={`text-[8.5px] xs:text-[9px] font-bold tracking-tight px-1.5 py-0.5 rounded-full mt-0.5 leading-none transition-all truncate max-w-full ${
                     isActive
                       ? `${meta.activeBg} font-extrabold shadow-2xs`
                       : isDark
@@ -338,7 +338,7 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
 
         {/* Separator Divider */}
         <div
-          className={`w-[1px] h-6 my-auto shrink-0 mx-1 ${
+          className={`w-[1px] h-7 my-auto shrink-0 mx-1.5 ${
             isDark ? 'bg-slate-800' : 'bg-slate-200'
           }`}
         />
@@ -358,14 +358,14 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
         >
           <div className="relative flex items-center justify-center">
             <div
-              className={`w-7 h-7 rounded-xl bg-gradient-to-tr ${meta.switcherGradient} p-[1.5px] shadow-sm group-hover:scale-105 transition-transform`}
+              className={`w-8.5 h-8.5 rounded-xl bg-gradient-to-tr ${meta.switcherGradient} p-[1.5px] shadow-sm group-hover:scale-105 transition-transform`}
             >
               <div className="w-full h-full bg-stone-900 rounded-[9px] flex items-center justify-center">
-                <LayoutGrid className="w-4 h-4 text-white group-hover:text-amber-300 transition-colors" />
+                <LayoutGrid className="w-5 h-5 text-white group-hover:text-amber-300 transition-colors" />
               </div>
             </div>
           </div>
-          <span className="text-[8px] font-black tracking-tight px-1.5 py-0.5 rounded-full mt-0.5 leading-none transition-all truncate text-amber-300 bg-amber-950/80 border border-amber-500/40 shadow-2xs">
+          <span className="text-[8.5px] xs:text-[9px] font-black tracking-tight px-1.5 py-0.5 rounded-full mt-0.5 leading-none transition-all truncate text-amber-300 bg-amber-950/80 border border-amber-500/40 shadow-2xs">
             Modul
           </span>
         </button>
