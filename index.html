@@ -36,9 +36,18 @@
         <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; color: #ffffff;">WargaQu 1.2.7</div>
         <div style="font-size: 13px; opacity: 0.85; margin-bottom: 24px; color: #a7f3d0; font-weight: 500;">Solusi Cerdas Masa Kini</div>
         <div style="width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #34d399; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-        <div style="font-size: 11px; opacity: 0.6; margin-top: 14px; color: #e2e8f0;">Memuat ekosistem WargaQu & POS...</div>
+        <div id="wq-loader-status" style="font-size: 11px; opacity: 0.8; margin-top: 14px; color: #e2e8f0;">Memuat ekosistem WargaQu & POS...</div>
       </div>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./src/main.tsx"></script>
+    <script>
+      setTimeout(function() {
+        var rootEl = document.getElementById('root');
+        var statusEl = document.getElementById('wq-loader-status');
+        if (rootEl && rootEl.getAttribute('data-loaded') !== 'true' && statusEl) {
+          statusEl.innerHTML = '<strong style="color:#fbbf24;">Aplikasi Belum Di-Build</strong><br><span style="font-size:10px;color:#cbd5e1;">GitHub Pages harus menjalankan build Vite atau mengunggah isi folder <code>dist/</code> (bukan file mentah .tsx).</span>';
+        }
+      }, 4000);
+    </script>
   </body>
 </html>

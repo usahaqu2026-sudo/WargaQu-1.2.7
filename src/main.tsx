@@ -8,7 +8,10 @@ import './index.css';
 // Inisialisasi Service Worker PWA (Offline-first & kompatibel dengan GitHub Pages)
 pwaService.registerServiceWorker();
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')!;
+rootElement.setAttribute('data-loaded', 'true');
+
+createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
       <App />

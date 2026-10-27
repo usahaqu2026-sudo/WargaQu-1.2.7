@@ -1,0 +1,54 @@
+name: Deploy WargaQu PWA to GitHub Pages
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+# Mengatur izin GITHUB_TOKEN untuk deployment GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Izinkan satu concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 3. Install Dependencies
+        run: npm ci || npm install --legacy-peer-deps
+
+      - name: 4. Build Vite PWA (Kompilasi ke folder dist/)
+        run: |
+          npm run build
+          # Pastikan .nojekyll ada agar GitHub Pages tidak mengabaikan folder dengan awalan garis bawah
+          touch dist/.nojekyll
+
+      - name: 5. Konfigurasi GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 6. Unggah Artefak Folder dist/
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: 7. Deploy ke GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
