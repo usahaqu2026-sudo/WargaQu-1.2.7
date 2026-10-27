@@ -5,8 +5,8 @@
  * 100% Free, no paid tokens or external services required.
  */
 
-export const APP_CURRENT_VERSION = '1.2.2';
-export const APP_BUILD_NUMBER = 1000;
+export const APP_CURRENT_VERSION = '1.2.7';
+export const APP_BUILD_NUMBER = 1005;
 export const DEFAULT_GITHUB_REPO = 'smbsyariah/baksoqu-pos';
 
 const STORAGE_KEYS = {

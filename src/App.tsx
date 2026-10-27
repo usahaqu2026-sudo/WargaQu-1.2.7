@@ -37,6 +37,7 @@ import { LapakQuView } from './components/lapak/LapakQuView';
 import { MuamalahQuView } from './components/muamalah/MuamalahQuView';
 import { SettingsSidebarDrawer, SettingSubTabKey } from './components/appqu/SettingsSidebarDrawer';
 import { ModuleSwitcherModal, AppQuModuleKey } from './components/appqu/ModuleSwitcherModal';
+import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
 
 import {
   TableItem,
@@ -1560,6 +1561,9 @@ export default function App() {
         }
         activeEmergencyCount={0}
       />
+
+      {/* PWA Offline Install & Update Notification Banner */}
+      <PWAInstallBanner />
     </AndroidFrame>
   );
 }
