@@ -175,19 +175,19 @@ export const AppQuHeader: React.FC<AppQuHeaderProps> = ({
 
   return (
     <header
-      className={`sticky top-0 z-30 border-b px-2.5 sm:px-3 pb-1.5 flex items-center justify-between shrink-0 select-none shadow-md transition-colors duration-200 ${
+      className={`sticky top-0 z-30 border-b px-2.5 sm:px-3 py-1.5 flex items-center justify-between shrink-0 select-none shadow-sm transition-colors duration-200 ${
         isDark
           ? 'bg-slate-900/95 border-slate-800 text-white'
           : 'bg-white/95 border-slate-200 text-slate-900'
       }`}
       style={{
-        paddingTop: 'var(--safe-top-clearance, max(env(safe-area-inset-top, 0px), 1rem))',
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 0.375rem)',
       }}
     >
       {/* ========================================================= */}
       {/* LEFT: HAMBURGER MENU + WARGAQU BRAND + MODUL IDENTITY     */}
       {/* ========================================================= */}
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-1.5 min-w-0 shrink">
         {onOpenSettingsSidebar && (
           <button
             type="button"
@@ -205,12 +205,12 @@ export const AppQuHeader: React.FC<AppQuHeaderProps> = ({
         )}
 
         {/* Brand Avatar WQ */}
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center font-black text-white text-xs shadow-md ring-1 ring-emerald-400/40 shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center font-black text-white text-[11px] shadow-sm ring-1 ring-emerald-400/40 shrink-0">
           WQ
         </div>
 
         {/* Dynamic Module Identity in Header */}
-        <div className="min-w-0">
+        <div className="min-w-0 shrink">
           {/* ================= PAGUYUBANQU HEADER INFO ================= */}
           {activeModule === 'paguyuban' ? (
             <div>
@@ -461,7 +461,7 @@ export const AppQuHeader: React.FC<AppQuHeaderProps> = ({
       {/* ========================================================= */}
       {/* RIGHT: DYNAMIC TOOLS PER MODULE + THEME TOGGLE + USER     */}
       {/* ========================================================= */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar py-0.5 max-w-[60%] justify-end">
         {/* Siren Playing Active Mute Button */}
         {isSirenPlaying && (
           <button
