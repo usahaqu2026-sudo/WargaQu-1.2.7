@@ -100,7 +100,7 @@ export default function App() {
   >('beranda');
   const [areaSubTab, setAreaSubTab] = useState<'map' | 'list' | 'rental' | 'netral'>('map');
   const [muamalahSubTab, setMuamalahSubTab] = useState<'pasar' | 'konsinyasi' | 'tambah'>('pasar');
-  const [usahaSubTab, setUsahaSubTab] = useState<'katalog' | 'mode' | 'tarif'>('katalog');
+  const [usahaSubTab, setUsahaSubTab] = useState<'katalog' | 'mode' | 'pilihan'>('katalog');
   const [chatSubTab, setChatSubTab] = useState<'transaksi' | 'komunitas' | 'sos'>('transaksi');
   const [siagaSubTab, setSiagaSubTab] = useState<'darurat' | 'patroli' | 'solidaritas'>('darurat');
 

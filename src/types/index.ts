@@ -987,8 +987,8 @@ export interface ProyekProfile {
 // USAHAQU SUBSCRIPTION, TRIAL & DYNAMIC PRICING TYPES
 // ==========================================
 export interface UsahaQuPricingConfig {
-  dailyRate: number; // default: 1000 (Rp 1.000 / hari)
-  trialDays: number; // default: 10 (Trial 10 hari)
+  dailyRate: number; // 0 (100% Gratis Komunitas Warga)
+  trialDays: number; // Tanpa batas trial
   warningDays: number; // default: 2 (H-2 popup informasi)
   discount6MonthsPercent: number; // default: 0 or 10
   discount12MonthsPercent: number; // default: 0 or 20

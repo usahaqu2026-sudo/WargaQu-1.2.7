@@ -4,14 +4,7 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  Lock,
   Clock,
-  QrCode,
-  Calendar,
-  AlertTriangle,
-  X,
-  Copy,
-  Check,
   ChevronRight,
   Flame,
   Truck,
@@ -21,8 +14,6 @@ import {
   Wrench,
   Activity,
   ShoppingBag,
-  Info,
-  CreditCard,
   Trash2,
   ExternalLink,
   ArrowLeft,
@@ -33,7 +24,6 @@ import {
 import {
   UserProfile,
   LocalBusiness,
-  UsahaQuPricingConfig,
   UserSubCategorySelection,
 } from '../../types';
 import { AppQuStorageService } from '../../services/storageAppQu';
@@ -264,15 +254,9 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
   theme = 'light',
 }) => {
   const isDark = theme === 'dark';
-  // Pricing & Trial State (Dynamic from Admin Configuration)
-  const [pricing, setPricing] = useState<UsahaQuPricingConfig>(() =>
-    AppQuStorageService.getUsahaQuPricing()
-  );
+  // Sub-Category Selection State (100% Free & Open)
   const [userSubs, setUserSubs] = useState<UserSubCategorySelection[]>(() =>
     AppQuStorageService.getUserSubCategories()
-  );
-  const [trialStatus, setTrialStatus] = useState(() =>
-    AppQuStorageService.getRemainingTrialDays()
   );
 
   // Operational Mode: Kios / Mangkal / Keliling (Hanya pilih 1)
@@ -283,50 +267,14 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
   // Drilldown View: null = show ONLY Categories. string = show Sub-Categories for this Category ID!
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  // Popup Information Modal State (Maksimal 3x otomatis sejak install)
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-
   useEffect(() => {
     if (activeSubTab === 'katalog') {
       setSelectedCategoryId(null);
-    } else if (activeSubTab === 'tarif') {
-      setIsInfoModalOpen(true);
     }
   }, [activeSubTab]);
-  const [popupViewCount, setPopupViewCount] = useState<number>(() =>
-    AppQuStorageService.getUsahaQuPopupCount()
-  );
 
-  // Subscription Checkout Modal State (Strictly Popup Modal)
-  const [selectedSubForCheckout, setSelectedSubForCheckout] = useState<{
-    sub: { id: string; name: string; tagline: string; icon: string };
-    category: BusinessCategoryDefinition;
-  } | null>(null);
-
-  // Checkout Plan: 1, 3, 6, 12 Bulan
-  const [selectedDurationMonths, setSelectedDurationMonths] = useState<1 | 3 | 6 | 12>(1);
-  const [checkoutStep, setCheckoutStep] = useState<'duration' | 'success'>('duration');
-  const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
-  const [copiedNominal, setCopiedNominal] = useState(false);
-
-  // Effect on mount: check if auto popup should show (maksimal 3x sejak install)
+  // Synchronize user subscriptions and operational mode
   useEffect(() => {
-    const currentCount = AppQuStorageService.getUsahaQuPopupCount();
-    if (currentCount < 3) {
-      const nextCount = AppQuStorageService.incrementUsahaQuPopupCount();
-      setPopupViewCount(nextCount);
-      setIsInfoModalOpen(true);
-    }
-  }, []);
-
-  // Synchronize dynamic pricing and user subscriptions across changes
-  useEffect(() => {
-    const handlePricingUpdated = (e: any) => {
-      if (e.detail) {
-        setPricing(e.detail);
-        setTrialStatus(AppQuStorageService.getRemainingTrialDays());
-      }
-    };
     const handleSubsUpdated = (e: any) => {
       if (e.detail) {
         setUserSubs(e.detail);
@@ -338,12 +286,10 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
       }
     };
 
-    window.addEventListener('usahaqu_pricing_updated', handlePricingUpdated);
     window.addEventListener('usahaqu_subcategories_updated', handleSubsUpdated);
     window.addEventListener('usahaqu_operational_mode_updated', handleModeUpdated);
 
     return () => {
-      window.removeEventListener('usahaqu_pricing_updated', handlePricingUpdated);
       window.removeEventListener('usahaqu_subcategories_updated', handleSubsUpdated);
       window.removeEventListener('usahaqu_operational_mode_updated', handleModeUpdated);
     };
@@ -367,97 +313,38 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
     return userSubs.find((s) => s.subCategoryId === subId);
   };
 
-  // Select First Free Sub-category
-  const handleSelectFreeSubCategory = (
+  // Toggle Sub-Category (100% Gratis Tanpa Batasan)
+  const handleToggleSubCategory = (
     sub: { id: string; name: string; tagline: string; icon: string },
     category: BusinessCategoryDefinition
   ) => {
-    const newSub: UserSubCategorySelection = {
-      subCategoryId: sub.id,
-      subCategoryName: sub.name,
-      categoryId: category.id,
-      categoryName: category.name,
-      isFreeTier: true,
-      subscribedAt: new Date().toISOString(),
-      expiresAt: null, // Free tier during trial/active
-      paymentMethod: 'free_trial',
-    };
-
-    const updated = AppQuStorageService.subscribeSubCategory(newSub);
-    setUserSubs(updated);
-    showNotification(`Sub-kategori "${sub.name}" berhasil diaktifkan GRATIS sebagai Sub-Kategori ke-1!`);
-  };
-
-  // Open Checkout for 2nd+ Sub-Category
-  const handleOpenCheckoutModal = (
-    sub: { id: string; name: string; tagline: string; icon: string },
-    category: BusinessCategoryDefinition
-  ) => {
-    setSelectedSubForCheckout({ sub, category });
-    setSelectedDurationMonths(1);
-    setCheckoutStep('duration');
-    setCopiedNominal(false);
-  };
-
-  // Calculate pricing for chosen duration
-  const calculateTotal = (months: 1 | 3 | 6 | 12) => {
-    const days = months * 30;
-    const base = days * pricing.dailyRate;
-    let discountPercent = 0;
-    if (months === 6) discountPercent = pricing.discount6MonthsPercent || 0;
-    if (months === 12) discountPercent = pricing.discount12MonthsPercent || 0;
-    const discountAmount = Math.round((base * discountPercent) / 100);
-    return {
-      days,
-      base,
-      discountPercent,
-      discountAmount,
-      total: Math.max(0, base - discountAmount),
-    };
-  };
-
-  // Confirm Simulated Digital Community Payment
-  const handleConfirmDigitalPayment = () => {
-    if (!selectedSubForCheckout) return;
-
-    setIsSimulatingPayment(true);
-
-    setTimeout(() => {
-      setIsSimulatingPayment(false);
-
-      const calc = calculateTotal(selectedDurationMonths);
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + calc.days);
-
-      const paidSub: UserSubCategorySelection = {
-        subCategoryId: selectedSubForCheckout.sub.id,
-        subCategoryName: selectedSubForCheckout.sub.name,
-        categoryId: selectedSubForCheckout.category.id,
-        categoryName: selectedSubForCheckout.category.name,
-        isFreeTier: false,
+    const existing = userSubs.find((s) => s.subCategoryId === sub.id);
+    if (existing) {
+      const updated = AppQuStorageService.removeUserSubCategory(sub.id);
+      setUserSubs(updated);
+      showNotification(`Sub-kategori "${sub.name}" dinonaktifkan.`);
+    } else {
+      const newSub: UserSubCategorySelection = {
+        subCategoryId: sub.id,
+        subCategoryName: sub.name,
+        categoryId: category.id,
+        categoryName: category.name,
+        isFreeTier: true,
         subscribedAt: new Date().toISOString(),
-        expiresAt: expiryDate.toISOString(),
-        durationDays: calc.days,
-        durationMonths: selectedDurationMonths,
-        totalPaid: calc.total,
-        paymentMethod: 'digital_usahaqu',
-        transactionId: `PAY-UQ-${Date.now()}`,
+        expiresAt: null,
+        paymentMethod: 'komunitas_gratis',
       };
-
-      const updated = AppQuStorageService.subscribeSubCategory(paidSub);
+      const updated = AppQuStorageService.subscribeSubCategory(newSub);
       setUserSubs(updated);
-      setCheckoutStep('success');
-      showNotification(`Aktivasi Langganan Rp ${calc.total.toLocaleString('id-ID')} Berhasil! Sub-kategori aktif.`);
-    }, 1500);
+      showNotification(`Sub-kategori "${sub.name}" berhasil diaktifkan! (Gratis)`);
+    }
   };
 
-  // Remove / Unsubscribe Sub-Category
+  // Remove Sub-Category
   const handleRemoveSubCategory = (subId: string, subName: string) => {
-    if (window.confirm(`Hapus sub-kategori "${subName}" dari pilihan usaha Anda?`)) {
-      const updated = AppQuStorageService.removeUserSubCategory(subId);
-      setUserSubs(updated);
-      showNotification(`Sub-kategori "${subName}" telah dihapus.`);
-    }
+    const updated = AppQuStorageService.removeUserSubCategory(subId);
+    setUserSubs(updated);
+    showNotification(`Sub-kategori "${subName}" telah dinonaktifkan.`);
   };
 
   // Launch Operational Module according to category
@@ -584,21 +471,6 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
             <option value="mangkal">Mangkal</option>
             <option value="keliling">Motor / Gerobak</option>
           </select>
-
-          {/* Tombol Info Trial & Tarif (Popup On-Demand) */}
-          <button
-            type="button"
-            onClick={() => setIsInfoModalOpen(true)}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-              isDark
-                ? 'bg-amber-950/70 hover:bg-amber-900 border border-amber-700 text-amber-300'
-                : 'bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900'
-            }`}
-            title="Informasi Trial & Tarif Pop-Up"
-          >
-            <Info className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden xs:inline">Info Trial</span>
-          </button>
         </div>
       </div>
 
@@ -768,17 +640,15 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
               {currentCategory.subCategories.map((sub) => {
                 const activeSub = getSubCategoryStatus(sub.id);
                 const isSelected = !!activeSub;
-                const isFree = activeSub?.isFreeTier;
-                const canSelectAsFirstFree = !isSelected && userSubs.length === 0;
 
                 return (
                   <div
                     key={sub.id}
                     className={`p-3.5 rounded-2xl border transition flex flex-col justify-between gap-3 ${
                       isSelected
-                        ? isFree
-                          ? 'bg-emerald-50/80 border-emerald-400 ring-1 ring-emerald-400/40 shadow-xs'
-                          : 'bg-teal-50/80 border-teal-400 ring-1 ring-teal-400/40 shadow-xs'
+                        ? 'bg-emerald-50/80 border-emerald-400 ring-1 ring-emerald-400/40 shadow-xs'
+                        : isDark
+                        ? 'bg-slate-900 border-slate-800 hover:border-slate-700 shadow-2xs'
                         : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/50 shadow-2xs'
                     }`}
                   >
@@ -787,56 +657,45 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
                       <div className="flex items-center justify-between gap-1.5 mb-1.5">
                         <span className="text-xl">{sub.icon}</span>
                         {isSelected ? (
-                          isFree ? (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Sub-1: GRATIS</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-teal-700 text-white flex items-center gap-1 shadow-2xs">
-                              <CreditCard className="w-3 h-3" />
-                              <span>Berbayar (Aktif)</span>
-                            </span>
-                          )
-                        ) : canSelectAsFirstFree ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-amber-600" />
-                            <span>Pilih Gratis (Sub-1)</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Aktif</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 flex items-center gap-1">
-                            <Lock className="w-2.5 h-2.5 text-stone-500" />
-                            <span>Rp{pricing.dailyRate}/hari</span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isDark
+                                ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                : 'bg-stone-100 text-stone-600 border border-stone-200'
+                            }`}
+                          >
+                            Tersedia
                           </span>
                         )}
                       </div>
 
-                      <h4 className="font-black text-stone-900 text-sm leading-snug">
+                      <h4
+                        className={`font-black text-sm leading-snug ${
+                          isDark ? 'text-white' : 'text-stone-900'
+                        }`}
+                      >
                         {sub.name}
                       </h4>
-                      <p className="text-xs text-stone-500 mt-0.5 line-clamp-2">
+                      <p
+                        className={`text-xs mt-0.5 line-clamp-2 ${
+                          isDark ? 'text-slate-400' : 'text-stone-500'
+                        }`}
+                      >
                         {sub.tagline}
                       </p>
-
-                      {isSelected && !isFree && activeSub?.expiresAt && (
-                        <div className="mt-2 text-[10px] text-teal-800 font-medium flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            Berlaku s/d:{' '}
-                            <b>
-                              {new Date(activeSub.expiresAt).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </b>
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-1.5">
+                    <div
+                      className={`pt-2 border-t flex items-center justify-between gap-1.5 ${
+                        isDark ? 'border-slate-800' : 'border-stone-100'
+                      }`}
+                    >
                       {isSelected ? (
                         <>
                           <button
@@ -850,29 +709,20 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveSubCategory(sub.id, sub.name)}
-                            title="Hapus Sub-Kategori"
-                            className="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                            title="Nonaktifkan Sub-Kategori"
+                            className="p-2 rounded-xl text-stone-400 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </>
-                      ) : canSelectAsFirstFree ? (
-                        <button
-                          type="button"
-                          onClick={() => handleSelectFreeSubCategory(sub, currentCategory)}
-                          className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1 shadow-xs transition active:scale-95 cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Aktifkan Gratis (Sub-1)</span>
-                        </button>
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleOpenCheckoutModal(sub, currentCategory)}
-                          className="w-full py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition active:scale-95 cursor-pointer"
+                          onClick={() => handleToggleSubCategory(sub, currentCategory)}
+                          className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1 shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                          <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Pilih Paket (QRIS)</span>
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Pilih Sub-Kategori</span>
                         </button>
                       )}
                     </div>
@@ -880,316 +730,6 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
                 );
               })}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 1. MODAL INFORMASI TRIAL & TARIF (POPUP MAKSIMAL 3x)      */}
-      {/* ========================================================= */}
-      {isInfoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-stone-900 border border-amber-500/50 rounded-3xl w-full max-w-md p-6 text-white shadow-2xl relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setIsInfoModalOpen(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-white p-1 rounded-full hover:bg-stone-800 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-400 mx-auto flex items-center justify-center shadow-lg">
-                <Clock className="w-7 h-7" />
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-                <h2 className="text-lg font-black text-amber-400 tracking-tight">
-                  Informasi Trial & Tarif UsahaQu
-                </h2>
-              </div>
-
-              <p className="text-xs text-stone-300 leading-relaxed">
-                Masa trial <b>{pricing.trialDays} hari</b> Anda tersisa{' '}
-                <span className="text-amber-300 font-bold font-mono">
-                  {trialStatus.remainingDays} Hari Lagi
-                </span>
-                .
-              </p>
-
-              <span className="inline-block text-[10px] font-mono text-stone-400 bg-stone-950 px-2.5 py-0.5 rounded-full border border-stone-800">
-                Popup otomatis ke-{Math.min(3, popupViewCount)} dari 3x sejak instalasi
-              </span>
-            </div>
-
-            {/* Highlights Poin Utama */}
-            <div className="p-3.5 rounded-2xl bg-stone-950 border border-stone-800 space-y-2.5 text-xs">
-              <div className="flex items-start gap-2.5 text-emerald-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <p className="leading-snug">
-                  <b>Sub-Kategori ke-1: 100% GRATIS:</b> Usaha utama warga bebas biaya tanpa tagihan apapun.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2.5 text-amber-300">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <p className="leading-snug">
-                  <b>Sub-Kategori ke-2 dst:</b> Cukup bayar{' '}
-                  <span className="font-bold text-white underline">
-                    Rp{pricing.dailyRate.toLocaleString('id-ID')}/hari
-                  </span>{' '}
-                  dengan paket pilihan 1, 3, 6, atau 12 bulan via QRIS.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2.5 text-teal-300">
-                <MapPin className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
-                <p className="leading-snug">
-                  <b>Tipe Operasional:</b> Pilih salah satu antara Kios, Mangkal, atau Keliling langsung di menu atas.
-                </p>
-              </div>
-            </div>
-
-            {/* Simulasi Harga Paket */}
-            <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] font-mono">
-              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800">
-                <span className="text-stone-400 block font-bold">1 Bln</span>
-                <span className="text-white font-bold block mt-0.5">
-                  Rp{(30 * pricing.dailyRate).toLocaleString('id-ID')}
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800">
-                <span className="text-stone-400 block font-bold">3 Bln</span>
-                <span className="text-teal-300 font-bold block mt-0.5">
-                  Rp{(90 * pricing.dailyRate).toLocaleString('id-ID')}
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800">
-                <span className="text-stone-400 block font-bold">6 Bln</span>
-                <span className="text-amber-300 font-bold block mt-0.5">
-                  Rp{(180 * pricing.dailyRate).toLocaleString('id-ID')}
-                </span>
-              </div>
-              <div className="p-2 rounded-xl bg-stone-950 border border-stone-800">
-                <span className="text-stone-400 block font-bold">12 Bln</span>
-                <span className="text-emerald-300 font-bold block mt-0.5">
-                  Rp{(360 * pricing.dailyRate).toLocaleString('id-ID')}
-                </span>
-              </div>
-            </div>
-
-            {/* Tombol Tutup */}
-            <button
-              type="button"
-              onClick={() => setIsInfoModalOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-black text-xs transition cursor-pointer shadow-md"
-            >
-              SAYA MENGERTI & TUTUP
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 2. MODAL POPUP QRIS PEMBAYARAN (HANYA POP UP)             */}
-      {/* ========================================================= */}
-      {selectedSubForCheckout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-md p-5 text-white shadow-2xl relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setSelectedSubForCheckout(null)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-white p-1 rounded-full hover:bg-stone-800 transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* STEP 1: PILIH DURASI PAKET (1, 3, 6, 12 BULAN) */}
-            {checkoutStep === 'duration' && (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{selectedSubForCheckout.sub.icon}</span>
-                    <h3 className="text-base font-black text-white">
-                      Langganan Sub-Kategori ke-2
-                    </h3>
-                  </div>
-                  <p className="text-xs text-stone-400">
-                    Sub-Kategori:{' '}
-                    <span className="text-emerald-400 font-bold">
-                      {selectedSubForCheckout.sub.name}
-                    </span>{' '}
-                    ({selectedSubForCheckout.category.name})
-                  </p>
-                  <p className="text-[11px] text-amber-300 font-medium">
-                    Tarif Komunitas: Rp{pricing.dailyRate.toLocaleString('id-ID')} / hari
-                  </p>
-                </div>
-
-                {/* Option Selector: 1, 3, 6, 12 Bulan */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-stone-300">
-                    Pilih Durasi Paket Berlangganan:
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { months: 1 as const, days: 30, label: '1 Bulan (30 Hari)' },
-                      { months: 3 as const, days: 90, label: '3 Bulan (90 Hari)' },
-                      { months: 6 as const, days: 180, label: '6 Bulan (180 Hari)' },
-                      { months: 12 as const, days: 360, label: '12 Bulan (360 Hari)' },
-                    ].map((opt) => {
-                      const calc = calculateTotal(opt.months);
-                      const isSelectedOpt = selectedDurationMonths === opt.months;
-
-                      return (
-                        <button
-                          key={opt.months}
-                          type="button"
-                          onClick={() => setSelectedDurationMonths(opt.months)}
-                          className={`p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                            isSelectedOpt
-                              ? 'bg-emerald-950/80 border-emerald-500 ring-2 ring-emerald-500/30'
-                              : 'bg-stone-950 border-stone-800 hover:border-stone-700'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-white">{opt.label}</span>
-                            {isSelectedOpt && (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                            )}
-                          </div>
-                          <div className="mt-2">
-                            <span className="text-base font-mono font-black text-emerald-400 block">
-                              Rp{calc.total.toLocaleString('id-ID')}
-                            </span>
-                            <span className="text-[10px] text-stone-400 font-mono">
-                              (Rp{pricing.dailyRate}/hari)
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Ringkasan Tagihan */}
-                <div className="p-3.5 rounded-2xl bg-stone-950 border border-stone-800 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-stone-400">
-                    <span>Durasi Terpilih</span>
-                    <span className="font-bold text-white">
-                      {selectedDurationMonths} Bulan ({selectedDurationMonths * 30} Hari)
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-stone-400">
-                    <span>Metode Aktivasi</span>
-                    <span className="font-bold text-emerald-400 flex items-center gap-1">
-                      <CreditCard className="w-3.5 h-3.5" />
-                      Konfirmasi Langganan Komunitas
-                    </span>
-                  </div>
-                  <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-sm">
-                    <span className="font-black text-white">Total Biaya</span>
-                    <span className="font-black font-mono text-emerald-400 text-base">
-                      Rp{calculateTotal(selectedDurationMonths).total.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Konfirmasi & Aktifkan Langsung */}
-                <div className="pt-2 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    disabled={isSimulatingPayment}
-                    onClick={handleConfirmDigitalPayment}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    {isSimulatingPayment ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>MEMVERIFIKASI & MENGAKTIFKAN...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>KONFIRMASI & AKTIFKAN SUB-KATEGORI</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubForCheckout(null)}
-                    className="w-full py-2 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs transition cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: SUKSES & AKTIFKAN SUB-KATEGORI */}
-            {checkoutStep === 'success' && (
-              <div className="space-y-4 text-center py-2">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 mx-auto flex items-center justify-center shadow-lg">
-                  <CheckCircle2 className="w-9 h-9" />
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-black text-white">Sub-Kategori Berhasil Diaktifkan!</h3>
-                  <p className="text-xs text-stone-300 mt-1">
-                    Sub-kategori{' '}
-                    <span className="text-emerald-400 font-bold">
-                      "{selectedSubForCheckout.sub.name}"
-                    </span>{' '}
-                    telah resmi aktif di akun UsahaQu Anda.
-                  </p>
-                </div>
-
-                {/* Rincian Nota Sukses */}
-                <div className="p-3.5 rounded-2xl bg-stone-950 border border-stone-800 text-xs space-y-1.5 text-left font-mono">
-                  <div className="flex justify-between text-stone-400">
-                    <span>Durasi</span>
-                    <span className="text-white font-bold">
-                      {selectedDurationMonths} Bulan ({selectedDurationMonths * 30} Hari)
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-stone-400">
-                    <span>Total Biaya</span>
-                    <span className="text-emerald-400 font-bold">
-                      Rp{calculateTotal(selectedDurationMonths).total.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-stone-400">
-                    <span>Status</span>
-                    <span className="text-emerald-400 font-bold">LUNAS & AKTIF</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const modKey = selectedSubForCheckout.category.moduleKey;
-                      setSelectedSubForCheckout(null);
-                      handleLaunchModule(modKey);
-                    }}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition cursor-pointer"
-                  >
-                    <span>BUKA MODUL USAHA SEKARANG</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSubForCheckout(null)}
-                    className="w-full py-2 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs transition cursor-pointer"
-                  >
-                    Selesai & Tutup
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}

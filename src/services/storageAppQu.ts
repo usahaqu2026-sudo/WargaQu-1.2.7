@@ -1783,13 +1783,13 @@ export const AppQuStorageService = {
   // ==========================================
   getUsahaQuPricing(): UsahaQuPricingConfig {
     const defaultPricing: UsahaQuPricingConfig = {
-      dailyRate: 1000, // Rp 1.000 / hari
-      trialDays: 10, // 10 hari trial gratis
-      warningDays: 2, // H-2 peringatan popup
+      dailyRate: 0, // 100% Gratis Komunitas Warga
+      trialDays: 99999, // Tanpa batas trial
+      warningDays: 0,
       discount6MonthsPercent: 0,
       discount12MonthsPercent: 0,
-      qrisMerchantName: 'AppQu UMKM Digital RT 04',
-      qrisNmid: 'ID1020304050607',
+      qrisMerchantName: 'WargaQu UMKM Komunitas',
+      qrisNmid: '',
       updatedAt: new Date().toISOString(),
     };
     try {
@@ -1799,7 +1799,7 @@ export const AppQuStorageService = {
         return defaultPricing;
       }
       const parsed = JSON.parse(raw);
-      return { ...defaultPricing, ...parsed };
+      return { ...defaultPricing, ...parsed, dailyRate: 0 };
     } catch {
       return defaultPricing;
     }
@@ -1807,6 +1807,7 @@ export const AppQuStorageService = {
 
   saveUsahaQuPricing(config: UsahaQuPricingConfig): void {
     config.updatedAt = new Date().toISOString();
+    config.dailyRate = 0;
     localStorage.setItem(STORAGE_KEYS.USAHAQU_PRICING, JSON.stringify(config));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('usahaqu_pricing_updated', { detail: config }));
@@ -1815,13 +1816,13 @@ export const AppQuStorageService = {
 
   resetUsahaQuPricing(): UsahaQuPricingConfig {
     const defaultPricing: UsahaQuPricingConfig = {
-      dailyRate: 1000,
-      trialDays: 10,
-      warningDays: 2,
+      dailyRate: 0,
+      trialDays: 99999,
+      warningDays: 0,
       discount6MonthsPercent: 0,
       discount12MonthsPercent: 0,
-      qrisMerchantName: 'AppQu UMKM Digital RT 04',
-      qrisNmid: 'ID1020304050607',
+      qrisMerchantName: 'WargaQu UMKM Komunitas',
+      qrisNmid: '',
       updatedAt: new Date().toISOString(),
     };
     this.saveUsahaQuPricing(defaultPricing);

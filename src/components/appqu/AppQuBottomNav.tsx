@@ -201,7 +201,7 @@ export const AppQuBottomNav: React.FC<AppQuBottomNavProps> = ({
         return [
           { id: 'katalog', label: 'Katalog & POS', icon: Sparkles },
           { id: 'mode', label: 'Operasional', icon: Clock },
-          { id: 'tarif', label: 'Tarif & Fitur', icon: CreditCard },
+          { id: 'pilihan', label: 'Pilihan Usaha', icon: Store },
         ];
 
       case 'chat':

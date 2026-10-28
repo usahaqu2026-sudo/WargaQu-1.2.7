@@ -37,7 +37,7 @@ import {
   UserAuthRole,
   ADMIN_MASTER_EMAIL,
 } from '../../services/authSecurityService';
-import { ResidentData, KasTransaction, UsahaQuPricingConfig } from '../../types';
+import { ResidentData, KasTransaction } from '../../types';
 import { AppQuStorageService } from '../../services/storageAppQu';
 
 interface AdminCommandCenterProps {
@@ -58,14 +58,8 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
   kasTransactions,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'stats' | 'monetization' | 'usahaqu_pricing' | 'broadcast' | 'quiz' | 'verification'
+    'stats' | 'monetization' | 'broadcast' | 'quiz' | 'verification'
   >('stats');
-
-  // UsahaQu Pricing & Trial Dynamic State
-  const [usahaQuPricing, setUsahaQuPricing] = useState<UsahaQuPricingConfig>(() =>
-    AppQuStorageService.getUsahaQuPricing()
-  );
-  const [isSavedUsahaQuPricing, setIsSavedUsahaQuPricing] = useState(false);
 
   // Monetization State
   const [monetization, setMonetization] = useState<MonetizationConfig>(() =>
@@ -100,7 +94,6 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
   useEffect(() => {
     if (isOpen) {
       setMonetization(AuthSecurityService.getMonetizationConfig());
-      setUsahaQuPricing(AppQuStorageService.getUsahaQuPricing());
       setBroadcasts(AuthSecurityService.getBroadcasts());
       setQuizzes(AuthSecurityService.getQuizzes());
       setSatisfaction(AuthSecurityService.getSatisfactionStats());
@@ -169,21 +162,6 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
     AuthSecurityService.saveMonetizationConfig(monetization);
     setIsSavedMonetization(true);
     setTimeout(() => setIsSavedMonetization(false), 2500);
-  };
-
-  // Handle Save UsahaQu Pricing & Trial
-  const handleSaveUsahaQuPricing = (e: React.FormEvent) => {
-    e.preventDefault();
-    AppQuStorageService.saveUsahaQuPricing(usahaQuPricing);
-    setIsSavedUsahaQuPricing(true);
-    setTimeout(() => setIsSavedUsahaQuPricing(false), 2500);
-  };
-
-  const handleResetUsahaQuPricing = () => {
-    const def = AppQuStorageService.resetUsahaQuPricing();
-    setUsahaQuPricing(def);
-    setIsSavedUsahaQuPricing(true);
-    setTimeout(() => setIsSavedUsahaQuPricing(false), 2500);
   };
 
   // Handle Send Broadcast
@@ -286,18 +264,6 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Monetisasi Dinamis</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('usahaqu_pricing')}
-            className={`py-2 px-3 text-center whitespace-nowrap rounded-t-xl transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'usahaqu_pricing'
-                ? 'bg-stone-900 text-emerald-400 border-t border-x border-stone-800'
-                : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span>Tarif & Trial UsahaQu</span>
           </button>
 
           <button
@@ -574,251 +540,6 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
                 <Check className="w-4 h-4 text-stone-950" />
                 <span>SIMPAN PERUBAHAN MONETISASI</span>
               </button>
-            </form>
-          )}
-
-          {/* ======================================================== */}
-          {/* TAB: PENGATURAN TARIF & TRIAL USAHAQU                    */}
-          {/* ======================================================== */}
-          {activeTab === 'usahaqu_pricing' && (
-            <form onSubmit={handleSaveUsahaQuPricing} className="space-y-4">
-              <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-200 space-y-1">
-                <p className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Store className="w-4 h-4" />
-                  Pengaturan Dinamis Tarif Sub-Kategori & Masa Trial UsahaQu
-                </p>
-                <p className="text-[11px] text-stone-300 leading-relaxed">
-                  Semua perubahan di menu ini tersimpan dinamis dan langsung diterapkan pada modul UsahaQu: masa trial 10 hari, popup peringatan H-2, sub-kategori ke-1 gratis, dan tarif Rp 1.000/hari untuk sub-kategori ke-2 dst dengan opsi 1, 3, 6, dan 12 bulan via QRIS.
-                </p>
-              </div>
-
-              {isSavedUsahaQuPricing && (
-                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-700/60 text-xs text-emerald-200 flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Pengaturan Tarif & Trial UsahaQu berhasil disimpan dan aktif secara dinamis!</span>
-                </div>
-              )}
-
-              {/* Tarif Per Hari */}
-              <div className="p-4 bg-stone-950 border border-stone-800 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-stone-300">
-                    Tarif Berlangganan Sub-Kategori ke-2 dst (per Hari)
-                  </label>
-                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">
-                    Rp{usahaQuPricing.dailyRate.toLocaleString('id-ID')} / hari
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={500}
-                    max={5000}
-                    step={100}
-                    value={usahaQuPricing.dailyRate}
-                    onChange={(e) =>
-                      setUsahaQuPricing({ ...usahaQuPricing, dailyRate: Number(e.target.value) })
-                    }
-                    className="flex-1 accent-emerald-500 cursor-pointer"
-                  />
-                  <div className="flex items-center gap-1 text-xs text-stone-400 font-bold">
-                    <span>Rp</span>
-                    <input
-                      type="number"
-                      min={100}
-                      max={100000}
-                      step={100}
-                      value={usahaQuPricing.dailyRate}
-                      onChange={(e) =>
-                        setUsahaQuPricing({
-                          ...usahaQuPricing,
-                          dailyRate: Math.max(100, Number(e.target.value)),
-                        })
-                      }
-                      className="w-24 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-white text-right font-mono font-bold focus:outline-hidden"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-stone-500 font-mono">
-                  <span>Rp500</span>
-                  <span>Standar Pengguna: Rp1.000/hari</span>
-                  <span>Rp5.000</span>
-                </div>
-              </div>
-
-              {/* Masa Trial & Peringatan Popup H-2 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-4 bg-stone-950 border border-stone-800 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-stone-300">
-                      Durasi Trial Gratis
-                    </label>
-                    <span className="text-xs font-mono font-bold text-teal-400 bg-teal-950 px-2 py-0.5 rounded border border-teal-800">
-                      {usahaQuPricing.trialDays} Hari
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    value={usahaQuPricing.trialDays}
-                    onChange={(e) =>
-                      setUsahaQuPricing({
-                        ...usahaQuPricing,
-                        trialDays: Math.max(1, Number(e.target.value)),
-                      })
-                    }
-                    className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold focus:outline-hidden"
-                  />
-                  <p className="text-[10px] text-stone-500">
-                    Masa percobaan awal pengguna untuk menikmati fitur UsahaQu (Default: 10 Hari).
-                  </p>
-                </div>
-
-                <div className="p-4 bg-stone-950 border border-stone-800 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-stone-300">
-                      Ambang Notifikasi Popup
-                    </label>
-                    <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
-                      H-{usahaQuPricing.warningDays} Hari
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={usahaQuPricing.warningDays}
-                    onChange={(e) =>
-                      setUsahaQuPricing({
-                        ...usahaQuPricing,
-                        warningDays: Math.max(1, Number(e.target.value)),
-                      })
-                    }
-                    className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold focus:outline-hidden"
-                  />
-                  <p className="text-[10px] text-stone-500">
-                    Popup peringatan masa trial akan otomatis muncul saat sisa hari ≤ H-2.
-                  </p>
-                </div>
-              </div>
-
-              {/* Data QRIS Merchant UsahaQu */}
-              <div className="p-4 bg-stone-950 border border-stone-800 rounded-2xl space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-stone-200">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Konfigurasi Merchant QRIS Pembayaran UsahaQu</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] text-stone-400 font-semibold block mb-1">
-                      Nama Merchant QRIS (Toko/RT)
-                    </label>
-                    <input
-                      type="text"
-                      value={usahaQuPricing.qrisMerchantName}
-                      onChange={(e) =>
-                        setUsahaQuPricing({
-                          ...usahaQuPricing,
-                          qrisMerchantName: e.target.value,
-                        })
-                      }
-                      className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden"
-                      placeholder="AppQu UMKM Digital RT 04"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-stone-400 font-semibold block mb-1">
-                      NMID QRIS Nasional
-                    </label>
-                    <input
-                      type="text"
-                      value={usahaQuPricing.qrisNmid}
-                      onChange={(e) =>
-                        setUsahaQuPricing({
-                          ...usahaQuPricing,
-                          qrisNmid: e.target.value,
-                        })
-                      }
-                      className="w-full bg-stone-900 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-hidden"
-                      placeholder="ID1020304050607"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Simulasi Harga Paket UsahaQu Terkini */}
-              <div className="p-4 bg-stone-900/90 border border-emerald-900/50 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    Simulasi Harga Paket di Halaman UsahaQu
-                  </span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-300">
-                    Live Calculation
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800">
-                    <span className="text-[10px] text-stone-400 block font-bold">1 Bulan (30 Hari)</span>
-                    <span className="text-sm font-black text-white font-mono mt-1 block">
-                      Rp{(30 * usahaQuPricing.dailyRate).toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[9px] text-stone-500 font-mono">Rp{usahaQuPricing.dailyRate}/hari</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800">
-                    <span className="text-[10px] text-stone-400 block font-bold">3 Bulan (90 Hari)</span>
-                    <span className="text-sm font-black text-teal-300 font-mono mt-1 block">
-                      Rp{(90 * usahaQuPricing.dailyRate).toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[9px] text-stone-500 font-mono">Rp{usahaQuPricing.dailyRate}/hari</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800">
-                    <span className="text-[10px] text-stone-400 block font-bold">6 Bulan (180 Hari)</span>
-                    <span className="text-sm font-black text-amber-300 font-mono mt-1 block">
-                      Rp{(180 * usahaQuPricing.dailyRate).toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[9px] text-stone-500 font-mono">Rp{usahaQuPricing.dailyRate}/hari</span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800">
-                    <span className="text-[10px] text-stone-400 block font-bold">12 Bulan (360 Hari)</span>
-                    <span className="text-sm font-black text-emerald-300 font-mono mt-1 block">
-                      Rp{(360 * usahaQuPricing.dailyRate).toLocaleString('id-ID')}
-                    </span>
-                    <span className="text-[9px] text-stone-500 font-mono">Rp{usahaQuPricing.dailyRate}/hari</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-xl bg-emerald-950/30 border border-emerald-800/40 text-[11px] text-emerald-300 flex items-center justify-between">
-                  <span>✨ <b>Sub-Kategori ke-1:</b> Tetap 100% GRATIS selama masa trial</span>
-                  <span className="font-bold text-emerald-400">Rp 0 (Free Tier)</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
-                >
-                  <Check className="w-4 h-4 text-white" />
-                  <span>SIMPAN PERUBAHAN TARIF USAHAQU</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResetUsahaQuPricing}
-                  className="py-3 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Reset Standar</span>
-                </button>
-              </div>
             </form>
           )}
 
