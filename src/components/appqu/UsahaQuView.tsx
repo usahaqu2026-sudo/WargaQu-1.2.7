@@ -20,13 +20,20 @@ import {
   MapPin,
   Bike,
   Tent,
+  Lock,
+  Unlock,
+  HelpCircle,
+  RotateCcw,
+  Mic,
 } from 'lucide-react';
 import {
   UserProfile,
   LocalBusiness,
   UserSubCategorySelection,
+  UsahaQuLockedProfile,
 } from '../../types';
 import { AppQuStorageService } from '../../services/storageAppQu';
+import { UsahaQuQuizModal } from './UsahaQuQuizModal';
 
 interface UsahaQuViewProps {
   currentUser: UserProfile;
@@ -41,6 +48,7 @@ interface UsahaQuViewProps {
   onSwitchToProyekQu?: () => void;
   onSwitchToLapakQu?: () => void;
   onSwitchToMuamalahQu?: () => void;
+  onSwitchToSmartPOS?: () => void;
   onOpenAreaQu?: () => void;
   onOpenChat?: (threadId?: string) => void;
   onUpdateBusinesses: (businesses: LocalBusiness[]) => void;
@@ -245,6 +253,7 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
   onSwitchToProyekQu,
   onSwitchToLapakQu,
   onSwitchToMuamalahQu,
+  onSwitchToSmartPOS,
   onOpenAreaQu,
   onOpenChat,
   onUpdateBusinesses,
@@ -264,6 +273,14 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
     AppQuStorageService.getUsahaQuOperationalMode()
   );
 
+  // Locked Profile State (Modul Usaha Terkunci)
+  const [lockedProfile, setLockedProfile] = useState<UsahaQuLockedProfile | null>(() =>
+    AppQuStorageService.getUsahaQuLockedProfile()
+  );
+
+  // Interactive Quiz Recommendation Modal State
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
+
   // Drilldown View: null = show ONLY Categories. string = show Sub-Categories for this Category ID!
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
@@ -273,7 +290,7 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
     }
   }, [activeSubTab]);
 
-  // Synchronize user subscriptions and operational mode
+  // Synchronize user subscriptions, operational mode, and locked profile
   useEffect(() => {
     const handleSubsUpdated = (e: any) => {
       if (e.detail) {
@@ -285,13 +302,18 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
         setOperationalMode(e.detail);
       }
     };
+    const handleLockedUpdated = (e: any) => {
+      setLockedProfile(e.detail);
+    };
 
     window.addEventListener('usahaqu_subcategories_updated', handleSubsUpdated);
     window.addEventListener('usahaqu_operational_mode_updated', handleModeUpdated);
+    window.addEventListener('usahaqu_locked_profile_updated', handleLockedUpdated);
 
     return () => {
       window.removeEventListener('usahaqu_subcategories_updated', handleSubsUpdated);
       window.removeEventListener('usahaqu_operational_mode_updated', handleModeUpdated);
+      window.removeEventListener('usahaqu_locked_profile_updated', handleLockedUpdated);
     };
   }, []);
 
@@ -383,18 +405,28 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
     }
   };
 
-  // Copy nominal to clipboard
-  const handleCopyNominal = (amount: number) => {
-    navigator.clipboard.writeText(amount.toString());
-    setCopiedNominal(true);
-    setTimeout(() => setCopiedNominal(false), 2000);
+  // Handle Unlock Module Profile
+  const handleUnlockProfile = () => {
+    AppQuStorageService.unlockUsahaQuProfile();
+    setLockedProfile(null);
+    showNotification('Kunci modul dibuka. Anda kini dapat memilih atau berganti ke modul usaha lain.');
   };
 
-  // Format Timer mm:ss
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  // Handle Direct Lock from Category
+  const handleDirectLockCategory = (category: BusinessCategoryDefinition) => {
+    const locked: UsahaQuLockedProfile = {
+      moduleId: category.moduleKey,
+      moduleName: category.name,
+      badge: category.badge,
+      categoryName: category.name,
+      operationalMode: operationalMode,
+      tagline: category.description,
+      lockedAt: new Date().toISOString(),
+      isLocked: true,
+    };
+    AppQuStorageService.saveUsahaQuLockedProfile(locked);
+    setLockedProfile(locked);
+    showNotification(`Modul "${category.name}" berhasil dikunci sebagai fokus bisnis Anda!`);
   };
 
   // Currently selected category object (if drilled down)
@@ -475,12 +507,164 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
       </div>
 
       {/* ========================================================= */}
+      {/* TAMPILAN FOKUS: MODUL TERKUNCI (JIKA SUDAH DIKUNCI)       */}
+      {/* ========================================================= */}
+      {lockedProfile?.isLocked && !selectedCategoryId && (
+        <div className="p-3 sm:p-4 space-y-3.5">
+          {/* Card Modul Terkunci Utama */}
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-emerald-800 via-teal-800 to-emerald-950 text-white shadow-xl border border-emerald-500/50 relative overflow-hidden">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-400 text-stone-950 shadow-xs flex items-center gap-1">
+                <Lock className="w-3 h-3 fill-stone-950" />
+                <span>Modul Terkunci Aktif</span>
+              </span>
+              <span className="text-[11px] font-bold text-emerald-200 bg-black/35 px-2.5 py-0.5 rounded-full border border-white/10">
+                Mode: {lockedProfile.operationalMode === 'kios' ? 'Kios Tetap' : lockedProfile.operationalMode === 'mangkal' ? 'Mangkal' : 'Motor/Gerobak'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3.5 my-2">
+              <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl shadow-md shrink-0">
+                {lockedProfile.moduleId === 'kulinerqu' ? '🍲' :
+                 lockedProfile.moduleId === 'ritelqu' ? '🥫' :
+                 lockedProfile.moduleId === 'bengkelqu' ? '🔧' :
+                 lockedProfile.moduleId === 'klinikqu' ? '🩺' :
+                 lockedProfile.moduleId === 'pelayananqu' ? '✂️' :
+                 lockedProfile.moduleId === 'transportasiqu' ? '🛵' :
+                 lockedProfile.moduleId === 'lapakqu' ? '🏪' :
+                 lockedProfile.moduleId === 'muamalahqu' ? '🤝' : '🏗️'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base sm:text-lg font-black text-white leading-tight">
+                  {lockedProfile.moduleName}
+                </h2>
+                <p className="text-xs text-emerald-200 font-semibold mt-0.5">
+                  {lockedProfile.badge} • {lockedProfile.categoryName}
+                </p>
+                <p className="text-[11px] text-white/80 mt-1 line-clamp-1">
+                  {lockedProfile.tagline}
+                </p>
+              </div>
+            </div>
+
+            {/* Tombol Utama: Buka Sistem Operasional Langsung */}
+            <div className="mt-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => handleLaunchModule(lockedProfile.moduleId)}
+                className="w-full py-3 px-4 rounded-2xl bg-white text-emerald-950 hover:bg-emerald-50 font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition active:scale-98"
+              >
+                <span>Buka Sistem Operasional & Kasir Sekarang</span>
+                <ArrowRight className="w-4 h-4 text-emerald-700" />
+              </button>
+
+              {onSwitchToSmartPOS && (
+                <button
+                  type="button"
+                  onClick={onSwitchToSmartPOS}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition active:scale-98"
+                >
+                  <Mic className="w-4 h-4 text-slate-950" />
+                  <span>Buka Smart POS Adaptif (Voice Order & Cetak Struk)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Aksi Tambah / Ganti Modul & Buka Kunci */}
+            <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between gap-2 text-xs flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsQuizModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold transition cursor-pointer active:scale-95 shadow-2xs"
+                title="Jawab pertanyaan kuesioner lagi atau pilih modul lain"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
+                <span>Ganti / Tambah Modul Usaha</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUnlockProfile}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-900 text-red-200 border border-red-500/40 font-bold transition cursor-pointer active:scale-95 shadow-2xs"
+                title="Buka kunci untuk menampilkan semua modul"
+              >
+                <Unlock className="w-3.5 h-3.5" />
+                <span>Buka Kunci</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
       {/* TAMPILAN 1: HANYA TAMPIL KATEGORI (SEBELUM DIPILIH)       */}
       {/* ========================================================= */}
       {!selectedCategoryId && (
         <div className="p-3 sm:p-4 space-y-3 pb-20">
+          {/* Featured Smart POS Adaptif Quick Launch Card */}
+          {onSwitchToSmartPOS && (
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 text-white shadow-xl border border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-black text-xl shadow-lg shrink-0">
+                  <Mic className="w-6 h-6 text-slate-950" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-sm sm:text-base text-white">Smart POS Adaptif UsahaQu</h3>
+                    <span className="text-[9px] font-black bg-emerald-400 text-stone-950 px-2 py-0.5 rounded-full shadow-2xs uppercase">
+                      Voice Order & Stok
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-100 mt-0.5 leading-snug">
+                    Sistem kasir pintar dengan pesanan suara (Kuliner, Ritel, Jasa, Sewa), pembaruan stok kilat, dan nota thermal/WA.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onSwitchToSmartPOS}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs shadow-md shrink-0 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer transition"
+              >
+                <Store className="w-4 h-4 text-slate-950" />
+                <span>Buka Smart POS</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Banner Ajakan Kuesioner Interaktif (Jika belum terkunci) */}
+          {!lockedProfile?.isLocked && (
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white shadow-lg border border-emerald-600/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-400 text-stone-950 flex items-center justify-center font-black text-xl shrink-0 shadow-md">
+                  ✨
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                    <span>Kuesioner Pemilihan Modul Usaha</span>
+                    <span className="text-[9px] font-black bg-amber-400 text-stone-950 px-1.5 py-0.2 rounded-full">
+                      Cerdas & Terkunci
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-emerald-100 mt-0.5 leading-snug">
+                    Jawab 3 pertanyaan interaktif singkat untuk mendapatkan modul yang 100% pas dengan usaha Anda, lalu kunci agar fokus tanpa gangguan.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsQuizModalOpen(true)}
+                className="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs shadow-md shrink-0 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-stone-950" />
+                <span>Mulai Kuesioner Sekarang</span>
+              </button>
+            </div>
+          )}
+
           {/* Featured MuamalahQu Quick Launch Card */}
-          {onSwitchToMuamalahQu && (
+          {onSwitchToMuamalahQu && !lockedProfile?.isLocked && (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white shadow-md flex items-center justify-between gap-3 border border-emerald-600/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0 shadow-xs">
@@ -510,10 +694,19 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
           )}
 
           <div className={`flex items-center justify-between px-1 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-            <span>Daftar Kategori Usaha ({USAHAQU_CATEGORIES.length})</span>
-            <span className={`text-[11px] font-normal ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-              Ketuk untuk memilih sub-kategori
+            <span>
+              {lockedProfile?.isLocked ? 'Semua Katalog Modul Usaha' : `Daftar Kategori Usaha (${USAHAQU_CATEGORIES.length})`}
             </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsQuizModalOpen(true)}
+                className="text-emerald-500 hover:text-emerald-400 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
+              >
+                <HelpCircle className="w-3 h-3" />
+                <span>Buka Kuesioner</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -522,26 +715,33 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
               const activeCountInCat = userSubs.filter(
                 (s) => s.categoryId === category.id
               ).length;
+              const isLockedHere = lockedProfile?.moduleId === category.moduleKey;
 
               return (
-                <button
+                <div
                   key={category.id}
-                  type="button"
-                  onClick={() => setSelectedCategoryId(category.id)}
-                  className={`p-4 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 group cursor-pointer ${
-                    isDark
+                  className={`p-3.5 rounded-2xl border transition-all text-left flex items-center justify-between gap-3 group ${
+                    isLockedHere
+                      ? isDark
+                        ? 'bg-emerald-950/60 border-emerald-500/80 ring-2 ring-emerald-500/40 shadow-xs'
+                        : 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/30 shadow-xs'
+                      : isDark
                       ? 'bg-slate-900 border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/80 shadow-2xs'
                       : 'bg-white border-stone-200/90 hover:border-emerald-500/50 hover:bg-emerald-50/20 shadow-2xs'
                   }`}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryId(category.id)}
+                    className="flex items-center gap-3.5 min-w-0 flex-1 text-left cursor-pointer"
+                  >
                     <div
                       className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${category.bgGradient} text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform`}
                     >
                       <CategoryIcon className="w-6 h-6" />
                     </div>
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className={`font-black text-sm transition-colors ${
                           isDark ? 'text-white group-hover:text-emerald-400' : 'text-stone-900 group-hover:text-emerald-800'
@@ -568,16 +768,39 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
                         )}
                       </div>
                     </div>
-                  </div>
+                  </button>
 
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                    isDark
-                      ? 'bg-slate-800 group-hover:bg-emerald-600 group-hover:text-white text-slate-400'
-                      : 'bg-stone-100 group-hover:bg-emerald-600 group-hover:text-white text-stone-400'
-                  }`}>
-                    <ChevronRight className="w-4 h-4" />
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleDirectLockCategory(category)}
+                      className={`px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-2xs ${
+                        isLockedHere
+                          ? 'bg-emerald-600 text-white'
+                          : isDark
+                          ? 'bg-slate-800 hover:bg-emerald-700 text-slate-200 hover:text-white border border-slate-700'
+                          : 'bg-stone-100 hover:bg-emerald-600 text-stone-700 hover:text-white border border-stone-300'
+                      }`}
+                      title="Kunci modul ini sebagai modul utama Anda"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>{isLockedHere ? 'Terkunci' : 'Kunci'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryId(category.id)}
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                        isDark
+                          ? 'bg-slate-800 group-hover:bg-emerald-600 group-hover:text-white text-slate-400'
+                          : 'bg-stone-100 group-hover:bg-emerald-600 group-hover:text-white text-stone-400'
+                      }`}
+                      title="Lihat sub-kategori"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -733,6 +956,18 @@ export const UsahaQuView: React.FC<UsahaQuViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Interactive UsahaQu Quiz Recommendation & Locking Modal */}
+      <UsahaQuQuizModal
+        isOpen={isQuizModalOpen}
+        onClose={() => setIsQuizModalOpen(false)}
+        onLockModule={(newLocked) => {
+          setLockedProfile(newLocked);
+          showNotification(`Modul "${newLocked.moduleName}" berhasil dikunci sebagai fokus bisnis Anda!`);
+        }}
+        currentLockedProfile={lockedProfile}
+        theme={theme}
+      />
     </div>
   );
 };

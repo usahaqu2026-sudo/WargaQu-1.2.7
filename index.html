@@ -41,13 +41,43 @@
     </div>
     <script type="module" src="./src/main.tsx"></script>
     <script>
-      setTimeout(function() {
-        var rootEl = document.getElementById('root');
-        var statusEl = document.getElementById('wq-loader-status');
-        if (rootEl && rootEl.getAttribute('data-loaded') !== 'true' && statusEl) {
-          statusEl.innerHTML = '<strong style="color:#fbbf24;">Aplikasi Belum Di-Build</strong><br><span style="font-size:10px;color:#cbd5e1;">GitHub Pages harus menjalankan build Vite atau mengunggah isi folder <code>dist/</code> (bukan file mentah .tsx).</span>';
+      (function() {
+        function showDiagnostic(msg) {
+          var rootEl = document.getElementById('root');
+          var statusEl = document.getElementById('wq-loader-status');
+          if (rootEl && rootEl.getAttribute('data-loaded') !== 'true' && statusEl) {
+            statusEl.innerHTML = [
+              '<div style="max-width:340px;background:rgba(15,23,42,0.95);border:1px solid #f59e0b;padding:16px;border-radius:16px;margin-top:14px;text-align:left;box-shadow:0 10px 25px rgba(0,0,0,0.5);">',
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">',
+                  '<span style="background:#f59e0b;color:#000;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">!</span>',
+                  '<strong style="color:#fbbf24;font-size:13px;">Penyebab Halaman Muter:</strong>',
+                '</div>',
+                '<p style="font-size:11px;line-height:1.45;color:#e2e8f0;margin:0 0 10px 0;">',
+                  'GitHub Pages melayani file mentah <code>.tsx</code> langsung tanpa di-build. Browser web memerlukan hasil kompilasi <code>dist/</code>.',
+                '</p>',
+                '<div style="background:rgba(255,255,255,0.08);padding:10px;border-radius:10px;font-size:11px;color:#a7f3d0;margin-bottom:12px;">',
+                  '<strong>Solusi 1 Klik (Rekomendasi):</strong><br>',
+                  'Buka GitHub &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong> &rarr; Ubah <em>Source</em> menjadi <strong>GitHub Actions</strong>. Workflow otomatis akan me-build aplikasi ini.',
+                '</div>',
+                '<div style="display:flex;flex-direction:column;gap:6px;">',
+                  '<a href="./usahaqu-pos.html" style="display:block;text-align:center;background:#10b981;color:#ffffff;font-size:11px;font-weight:bold;padding:8px 12px;border-radius:8px;text-decoration:none;">Buka Smart POS Adaptif Standalone &rarr;</a>',
+                  '<a href="./simulator-preview.html" style="display:block;text-align:center;background:#1e293b;border:1px solid #475569;color:#cbd5e1;font-size:10px;padding:6px 10px;border-radius:8px;text-decoration:none;">Buka Simulator HP Offline</a>',
+                '</div>',
+              '</div>'
+            ].join('');
+          }
         }
-      }, 4000);
+
+        window.addEventListener('error', function(e) {
+          if (e.message && (e.message.indexOf('tsx') !== -1 || e.message.indexOf('module') !== -1 || e.message.indexOf('Failed to fetch') !== -1)) {
+            showDiagnostic(e.message);
+          }
+        }, true);
+
+        setTimeout(function() {
+          showDiagnostic('timeout');
+        }, 3000);
+      })();
     </script>
   </body>
 </html>

@@ -35,6 +35,7 @@ interface RoleSwitcherModalProps {
   onSwitchToProyekQu?: () => void;
   onSwitchToLapakQu?: () => void;
   onSwitchToMuamalahQu?: () => void;
+  onSwitchToSmartPOS?: () => void;
   onOpenArsitektur: () => void;
 }
 
@@ -53,6 +54,7 @@ export const RoleSwitcherModal: React.FC<RoleSwitcherModalProps> = ({
   onSwitchToProyekQu,
   onSwitchToLapakQu,
   onSwitchToMuamalahQu,
+  onSwitchToSmartPOS,
   onOpenArsitektur,
 }) => {
   if (!isOpen) return null;
@@ -408,6 +410,23 @@ export const RoleSwitcherModal: React.FC<RoleSwitcherModalProps> = ({
                   <span className="truncate">MuamalahQu (Pasar & Konsinyasi)</span>
                   <span className="ml-auto text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-black">
                     Light/Dark
+                  </span>
+                </button>
+              )}
+
+              {onSwitchToSmartPOS && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSwitchToSmartPOS();
+                  }}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold border border-emerald-400/50 flex items-center gap-2 shadow-xs transition-transform active:scale-95 cursor-pointer col-span-2"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="truncate">Smart POS Adaptif UsahaQu</span>
+                  <span className="ml-auto text-[9px] bg-amber-400 text-emerald-950 px-1.5 py-0.5 rounded font-black">
+                    Voice & Struk
                   </span>
                 </button>
               )}

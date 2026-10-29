@@ -1008,7 +1008,7 @@ export interface UserSubCategorySelection {
   durationDays?: number;
   durationMonths?: number;
   totalPaid?: number;
-  paymentMethod?: 'free_trial' | 'qris' | 'digital_usahaqu';
+  paymentMethod?: 'free_trial' | 'qris' | 'digital_usahaqu' | 'komunitas_gratis';
   transactionId?: string;
   qrisNmid?: string;
 }
@@ -1041,6 +1041,25 @@ export interface MuamalahKonsinyasi {
   harga: number;
   status: string;
   tanggalTitip?: string;
+}
+
+// ==========================================
+// USAHAQU LOCKED MODULE & WIZARD RECOMMENDATION
+// ==========================================
+export interface UsahaQuLockedProfile {
+  moduleId: string;
+  moduleName: string;
+  badge: string;
+  categoryName: string;
+  operationalMode: 'kios' | 'mangkal' | 'keliling';
+  tagline: string;
+  lockedAt: string;
+  isLocked: boolean;
+  questionnaireAnswers?: {
+    businessType?: string;
+    operationalNeed?: string;
+    operatingPlace?: string;
+  };
 }
 
 

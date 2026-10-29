@@ -22,6 +22,7 @@ import {
   UsahaQuPricingConfig,
   UserSubCategorySelection,
   UsahaQuTrialStatus,
+  UsahaQuLockedProfile,
 } from '../types';
 
 import bannerImg from '../assets/images/appqu_community_banner_1792459328196.jpg';
@@ -54,6 +55,7 @@ const STORAGE_KEYS = {
   USAHAQU_TRIAL: 'appqu_usahaqu_trial_v1',
   USAHAQU_POPUP_COUNT: 'appqu_usahaqu_popup_count_v1',
   USAHAQU_OPERATIONAL_MODE: 'appqu_usahaqu_operational_mode_v1',
+  USAHAQU_LOCKED_PROFILE: 'appqu_usahaqu_locked_profile_v1',
 };
 
 // Preset Users for RBAC Demonstration (Tier 1 & Tier 2 Saling Verifikasi & Validasi)
@@ -1949,6 +1951,38 @@ export const AppQuStorageService = {
     localStorage.setItem(STORAGE_KEYS.USAHAQU_OPERATIONAL_MODE, mode);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('usahaqu_operational_mode_updated', { detail: mode }));
+    }
+  },
+
+  getUsahaQuLockedProfile(): UsahaQuLockedProfile | null {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.USAHAQU_LOCKED_PROFILE);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.moduleId) {
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  saveUsahaQuLockedProfile(profile: UsahaQuLockedProfile | null): void {
+    if (!profile) {
+      localStorage.removeItem(STORAGE_KEYS.USAHAQU_LOCKED_PROFILE);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.USAHAQU_LOCKED_PROFILE, JSON.stringify(profile));
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('usahaqu_locked_profile_updated', { detail: profile }));
+    }
+  },
+
+  unlockUsahaQuProfile(): void {
+    localStorage.removeItem(STORAGE_KEYS.USAHAQU_LOCKED_PROFILE);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('usahaqu_locked_profile_updated', { detail: null }));
     }
   },
 

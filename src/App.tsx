@@ -35,6 +35,7 @@ import { PelayananQuView } from './components/pelayanan/PelayananQuView';
 import { ProyekQuView } from './components/proyek/ProyekQuView';
 import { LapakQuView } from './components/lapak/LapakQuView';
 import { MuamalahQuView } from './components/muamalah/MuamalahQuView';
+import { SmartPOSAdaptifView } from './components/usahaqu_pos/SmartPOSAdaptifView';
 import { SettingsSidebarDrawer, SettingSubTabKey } from './components/appqu/SettingsSidebarDrawer';
 import { ModuleSwitcherModal, AppQuModuleKey } from './components/appqu/ModuleSwitcherModal';
 import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
@@ -86,13 +87,13 @@ export default function App() {
   // MASTER APPLICATION MODE: 'appqu' | 'baksoqu' | 'bengkelqu' | 'klinikqu' | 'ritelqu' | 'kulinerqu' | 'transportasiqu' | 'pelayananqu' | 'proyekqu' | 'lapakqu' | 'muamalahqu'
   // ====================================================
   const [appMode, setAppMode] = useState<
-    'appqu' | 'baksoqu' | 'bengkelqu' | 'klinikqu' | 'ritelqu' | 'kulinerqu' | 'transportasiqu' | 'pelayananqu' | 'proyekqu' | 'lapakqu' | 'muamalahqu'
+    'appqu' | 'baksoqu' | 'bengkelqu' | 'klinikqu' | 'ritelqu' | 'kulinerqu' | 'transportasiqu' | 'pelayananqu' | 'proyekqu' | 'lapakqu' | 'muamalahqu' | 'smartpos'
   >('appqu');
 
   // AppQu Active Module (With AreaQu, ChatQu, MuamalahQu, and Setting)
   const [activeAppQuModule, setActiveAppQuModule] = useState<
     'paguyuban' | 'warga' | 'usaha' | 'area' | 'siaga' | 'arsitektur' | 'chat' | 'setting' | 'muamalah'
-  >('paguyuban');
+  >('usaha');
 
   // Sub-Tab state per Module for compact single-row bottom navigation
   const [paguyubanSubTab, setPaguyubanSubTab] = useState<
@@ -463,6 +464,12 @@ export default function App() {
     showNotification('Beralih ke MuamalahQu: Pasar Warga & Titip Jual (Light/Dark Mode)');
   };
 
+  // Switch to Smart POS Adaptif UsahaQu (Voice Order, Stok, Thermal Print & WA)
+  const handleSwitchToSmartPOS = () => {
+    setAppMode('smartpos');
+    showNotification('Beralih ke Smart POS Adaptif UsahaQu (Voice Order & Cetak Struk)');
+  };
+
   // Return to AppQu Ecosystem
   const handleReturnToAppQu = () => {
     setAppMode('appqu');
@@ -784,6 +791,8 @@ export default function App() {
           ? 'LapakQu'
           : appMode === 'muamalahqu'
           ? 'MuamalahQu'
+          : appMode === 'smartpos'
+          ? 'Smart POS'
           : 'PelayananQu'
       }
     >
@@ -938,6 +947,7 @@ export default function App() {
                 onSwitchToProyekQu={handleSwitchToProyekQu}
                 onSwitchToLapakQu={handleSwitchToLapakQu}
                 onSwitchToMuamalahQu={handleSwitchToMuamalahQu}
+                onSwitchToSmartPOS={handleSwitchToSmartPOS}
                 onOpenAreaQu={() => setActiveAppQuModule('area')}
                 onOpenChat={(threadId) => {
                   setSelectedChatThreadId(threadId || null);
@@ -1133,6 +1143,7 @@ export default function App() {
             onSwitchToProyekQu={handleSwitchToProyekQu}
             onSwitchToLapakQu={handleSwitchToLapakQu}
             onSwitchToMuamalahQu={handleSwitchToMuamalahQu}
+            onSwitchToSmartPOS={handleSwitchToSmartPOS}
             onOpenArsitektur={() => setActiveAppQuModule('arsitektur')}
           />
 
@@ -1497,6 +1508,17 @@ export default function App() {
           currentUser={currentUser}
           onBackToAppQu={handleReturnToAppQu}
           showNotification={showNotification}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* 12. SMART POS ADAPTIF USAHAQU (VOICE ORDER & CETAK STRUK) */}
+      {/* ========================================================= */}
+      {appMode === 'smartpos' && (
+        <SmartPOSAdaptifView
+          onBackToAppQu={handleReturnToAppQu}
           theme={theme}
           onToggleTheme={handleToggleTheme}
         />
